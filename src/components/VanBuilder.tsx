@@ -902,14 +902,11 @@ export const VanBuilder: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans']">
+    <div className="flex flex-col min-h-screen h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans'] fixed inset-0 overflow-hidden">
       <GlobalStyles />
       
-      {/* Add top spacing */}
-      <div className="h-12"></div>
-      
-      {/* Main content section with fixed height */}
-      <div className="flex flex-1 overflow-hidden p-6 gap-6">
+      {/* Main content section with fixed height and added padding */}
+      <div className="flex flex-1 overflow-hidden p-6 pt-10 pb-10 gap-6">
         {/* Left sidebar - Categories */}
         <div className="w-[340px] flex flex-col overflow-hidden rounded-xl shadow-lg bg-white/90 backdrop-blur-sm self-start" style={{ maxHeight: "90vh" }}>
           {/* Title with improved styling */}
@@ -1137,9 +1134,6 @@ export const VanBuilder: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      {/* Add bottom spacing */}
-      <div className="h-12"></div>
       
       {/* Enhanced Email Modal */}
       <EmailModal 
