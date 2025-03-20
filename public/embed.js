@@ -3,7 +3,7 @@
   function createVanBuilderIframe() {
     const iframe = document.createElement('iframe');
     iframe.id = 'chewy-van-builder';
-    iframe.src = 'YOUR_VERCEL_DEPLOYMENT_URL'; // Replace with your actual Vercel URL after deployment
+    iframe.src = 'https://chewy-five.vercel.app/'; // Updated with your actual Vercel URL
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';

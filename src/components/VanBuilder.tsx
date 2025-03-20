@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 import type { VanConfiguration, CustomizationOption } from '../types';
 import testImage from '../assets/test.png'; // Adjust the path as needed
 import logo from '../assets/logo.png'; // Add this import at the top with other imports
+import '../styles/fonts.css'; // Import the custom fonts
 
 // Import ShadCN components
 import { Button } from './ui/button';
@@ -14,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+import { Menubar, MenubarItem } from './ui/menubar';
 
 // Define the category types
 type CategoryType = 
@@ -49,20 +51,43 @@ interface CategoryProps {
 
 // Updated Category component with ShadCN-inspired styling (badges removed)
 const Category: React.FC<CategoryProps> = ({ title, isActive, isCompleted, onClick }) => {
+  let icon = null;
+  
+  if (isActive) {
+    icon = (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    );
+  } else if (isCompleted) {
+    icon = (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      </svg>
+    );
+  } else {
+    icon = (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  }
+
   return (
     <div 
       className={cn(
-        "py-3 px-6 cursor-pointer font-medium relative transition-all duration-200 border-l-4",
+        "py-3 px-4 cursor-pointer font-medium relative transition-all duration-200 my-1 mx-2 rounded-lg",
         isActive 
-          ? "bg-[#F8BC40] text-gray-800 border-l-4 border-[#F8BC40]" 
+          ? "bg-[#F8BC40] text-white shadow-sm" 
           : isCompleted
             ? "text-gray-700 hover:bg-white/50 border-l-4 border-green-500"
-            : "text-gray-700 hover:bg-white/50 border-l-4 border-transparent",
+            : "text-gray-700 hover:bg-white/50 hover:shadow-sm",
       )}
       onClick={onClick}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-sm uppercase tracking-wider font-semibold">{title}</span>
+      <div className="flex items-start justify-between">
+        <span className="text-sm uppercase tracking-wider font-semibold leading-tight" style={{ wordBreak: "break-word" }}>{title}</span>
+        <div className="ml-2 mt-0.5">{icon}</div>
       </div>
     </div>
   );
@@ -207,10 +232,8 @@ const EmailModal: React.FC<{
 const GlobalStyles = () => (
   <style dangerouslySetInnerHTML={{
     __html: `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-      
       body {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Open Sans', sans-serif;
       }
       
       .custom-scrollbar::-webkit-scrollbar {
@@ -286,7 +309,7 @@ const OptionItem = ({
 }) => (
   <div 
     className={cn(
-      "flex items-center justify-between py-3 px-6 text-gray-700 cursor-pointer transition-all duration-200 rounded-md my-1 option-transition",
+      "flex items-start justify-between py-3 px-4 text-gray-700 cursor-pointer transition-all duration-200 rounded-md my-1 option-transition",
       isSelected 
         ? "bg-[#F8BC40]/20 shadow-sm border border-[#F8BC40]/30" 
         : "hover:bg-white/60 border border-transparent hover:border-gray-200"
@@ -296,18 +319,18 @@ const OptionItem = ({
     tabIndex={0}
     aria-pressed={isSelected}
   >
-    <div className="flex items-center pointer-events-none flex-1 min-w-0 mr-4">
+    <div className="flex items-start pointer-events-none flex-1 min-w-0 mr-2">
       <Checkbox 
         checked={isSelected} 
-        className="flex-shrink-0"
+        className="flex-shrink-0 mt-1"
         // Disable actual checkbox click since we're handling it at the parent div level
         onClick={(e) => e.stopPropagation()}
       />
-      <span className="font-medium ml-3 truncate">{name}</span>
+      <span className="font-medium ml-2 text-sm leading-tight break-words" style={{ wordBreak: "break-word" }}>{name}</span>
     </div>
     {showPrice && price !== undefined && (
       <div className={cn(
-        "pointer-events-none font-semibold flex-shrink-0 rounded-full px-2 py-0.5 text-sm",
+        "pointer-events-none font-semibold flex-shrink-0 rounded-full px-2 py-0.5 text-xs whitespace-nowrap mt-1",
         isSelected ? "bg-[#F8BC40]/30 text-gray-800" : "bg-gray-100 text-gray-700"
       )}>
         ${price.toLocaleString()}
@@ -334,7 +357,7 @@ const VanImageVisualization = ({
   }, [imagePath, view]);
   
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full flex items-center justify-center p-4">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F8BC40]"></div>
@@ -343,7 +366,7 @@ const VanImageVisualization = ({
       <img 
         src={imagePath}
         alt={`${view} view of the van`}
-        className="max-w-full max-h-full object-contain transition-opacity duration-500"
+        className="max-w-full max-h-full object-contain transition-opacity duration-500 scale-125"
         style={{ opacity: isLoading ? 0 : opacity }}
         onLoad={() => setIsLoading(false)}
       />
@@ -358,8 +381,8 @@ const VanImageVisualization = ({
 };
 
 export const VanBuilder: React.FC = () => {
-  // Active category state
-  const [activeCategory, setActiveCategory] = useState<CategoryType>('chassis');
+  // Active category state - make it nullable to support closing drawers
+  const [activeCategory, setActiveCategory] = useState<CategoryType | null>('chassis');
   
   // Completed categories
   const [completedCategories, setCompletedCategories] = useState<CategoryType[]>([]);
@@ -530,10 +553,9 @@ export const VanBuilder: React.FC = () => {
       chassisId
     }));
     
-    // Mark chassis as completed when selected
+    // Mark chassis as completed when selected but don't auto-advance
     if (!completedCategories.includes('chassis')) {
       setCompletedCategories(prev => Array.from(new Set([...prev, 'chassis'])));
-      setTimeout(() => setActiveCategory('models'), 500);
     }
   };
 
@@ -544,10 +566,9 @@ export const VanBuilder: React.FC = () => {
       modelId
     }));
     
-    // Mark models as completed when selected
+    // Mark models as completed when selected but don't auto-advance
     if (!completedCategories.includes('models')) {
       setCompletedCategories(prev => Array.from(new Set([...prev, 'models'])));
-      setTimeout(() => setActiveCategory('colors'), 500);
     }
   };
 
@@ -558,10 +579,9 @@ export const VanBuilder: React.FC = () => {
       color
     }));
     
-    // Mark colors as completed when selected
+    // Mark colors as completed when selected but don't auto-advance
     if (!completedCategories.includes('colors')) {
       setCompletedCategories(prev => Array.from(new Set([...prev, 'colors'])));
-      setTimeout(() => setActiveCategory('laminate'), 500);
     }
   };
 
@@ -584,18 +604,11 @@ export const VanBuilder: React.FC = () => {
     });
 
     // Add the current category to completed based on what type of option was selected
-    if (!completedCategories.includes(activeCategory)) {
+    if (!completedCategories.includes(activeCategory as CategoryType)) {
       setCompletedCategories(prev => {
         // Create a new array with unique values
-        return Array.from(new Set([...prev, activeCategory]));
+        return Array.from(new Set([...prev, activeCategory as CategoryType]));
       });
-      
-      // Determine the next category to navigate to
-      const currentIndex = CATEGORY_ORDER.indexOf(activeCategory);
-      if (currentIndex >= 0 && currentIndex < CATEGORY_ORDER.length - 1) {
-        const nextCategory = CATEGORY_ORDER[currentIndex + 1];
-        setTimeout(() => setActiveCategory(nextCategory), 500);
-      }
     }
   };
 
@@ -617,7 +630,7 @@ export const VanBuilder: React.FC = () => {
 
   // Render category content functions for each category
   const renderChassisOptions = () => (
-    <div className="py-2 space-y-1 px-4">
+    <div className="py-2 space-y-1 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3">
       {chassisOptions.map(chassis => (
         <OptionItem 
           key={chassis.id} 
@@ -634,10 +647,10 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderModelOptions = () => (
-    <div className="py-2 space-y-1 px-4">
+    <div className="py-2 space-y-1 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3">
       {modelPackages.map(model => (
         <OptionItem 
-              key={model.id}
+          key={model.id}
           isSelected={configuration.modelId === model.id}
           name={model.name}
           price={model.price}
@@ -646,12 +659,12 @@ export const VanBuilder: React.FC = () => {
             handleModelSelect(model.id);
           }}
         />
-          ))}
-        </div>
+      ))}
+    </div>
   );
 
   const renderColorOptions = () => (
-    <div className="py-2 px-4 bg-white space-y-1 relative z-0">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {colorOptions.map(color => (
         <OptionItem 
           key={color.id} 
@@ -662,12 +675,12 @@ export const VanBuilder: React.FC = () => {
             handleColorSelect(color.id);
           }}
         />
-          ))}
-        </div>
+      ))}
+    </div>
   );
 
   const renderElectricalOptions = () => (
-    <div className="py-2 px-4 bg-white space-y-1 relative z-0">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {customizationOptions
         .filter(opt => opt.category === 'Electrical')
         .map(option => (
@@ -686,7 +699,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderLaminateOptions = () => (
-    <div className="py-2 px-4 bg-white space-y-1 relative z-0">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {laminateOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -703,7 +716,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderUpholsteryOptions = () => (
-    <div className="py-2 px-4 bg-white space-y-1 relative z-0">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {upholsteryOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -720,7 +733,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderHeatingOptions = () => (
-    <div className="py-2 px-4 bg-white space-y-1 relative z-0">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {heatingOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -736,10 +749,8 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
-  // Add these render functions with the other render functions
-
   const renderExteriorOptions = () => (
-    <div className="py-2 px-4 bg-white bg-opacity-90 space-y-1 relative z-0 ml-4">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {exteriorOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -756,7 +767,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderStorageOptions = () => (
-    <div className="py-2 px-4 bg-white bg-opacity-90 space-y-1 relative z-0 ml-4">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {storageOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -772,11 +783,8 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
-  // Similarly add render functions for bathroom, kitchen, lighting, offgrid, and security
-  // For brevity, I'll show just one more and then update the JSX to include all options
-
   const renderBathroomOptions = () => (
-    <div className="py-2 px-4 bg-white bg-opacity-90 space-y-1 relative z-0 ml-4">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {bathroomOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -793,7 +801,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderKitchenOptions = () => (
-    <div className="py-2 px-4 bg-white bg-opacity-90 space-y-1 relative z-0 ml-4">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {kitchenOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -810,7 +818,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderLightingOptions = () => (
-    <div className="py-2 px-4 bg-white bg-opacity-90 space-y-1 relative z-0 ml-4">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {lightingOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -827,7 +835,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderOffgridOptions = () => (
-    <div className="py-2 px-4 bg-white bg-opacity-90 space-y-1 relative z-0 ml-4">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {offgridOptions.map(option => (
         <OptionItem 
           key={option.id} 
@@ -844,7 +852,7 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderSecurityOptions = () => (
-    <div className="py-2 px-4 bg-white bg-opacity-90 space-y-1 relative z-0 ml-4">
+    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {securityOptions.map(option => (
         <OptionItem 
           key={option.id}
@@ -894,27 +902,26 @@ export const VanBuilder: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-sans">
+    <div className="flex flex-col min-h-screen h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans']">
       <GlobalStyles />
       
-      {/* Yellow header with logo and title */}
-      <div className="bg-[#F8BC40] px-6 py-2 flex items-center">
-        <img src={logo} alt="Chewy Logo" className="h-8 mr-3" />
-        <h1 className="text-xl font-bold text-gray-800">Chewy Custom Builder</h1>
-      </div>
-      
-      {/* Main content with improved layout - adjust flex-1 to account for header height */}
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-48px)]">
+      {/* Main content section with fixed height */}
+      <div className="flex flex-1 overflow-hidden p-6 gap-6">
         {/* Left sidebar - Categories */}
-        <div className="w-96 flex flex-col overflow-hidden bg-white/50 backdrop-blur-sm border-r border-white/50">
+        <div className="w-[340px] flex flex-col overflow-hidden rounded-xl shadow-lg bg-white/90 backdrop-blur-sm self-start" style={{ maxHeight: "90vh" }}>
           {/* Title with improved styling */}
-          <div className="py-3 px-6 sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-gray-200/50">
-            <h2 className="text-lg font-bold text-gray-800">Customize Your Van</h2>
+          <div className="py-3 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100 rounded-t-xl">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+              </svg>
+              Customize Your Van
+            </h2>
             <p className="text-gray-600 text-xs mt-0.5">Select options to build your dream van</p>
           </div>
           
           {/* Categories with scrolling */}
-          <div className="overflow-y-auto custom-scrollbar flex-1 pt-2 pb-6">
+          <div className="overflow-y-auto custom-scrollbar flex-1 pt-2 pb-3 rounded-b-xl">
             {CATEGORY_ORDER.map((category) => (
               <div key={category} className="mb-1">
                 <Category 
@@ -931,7 +938,15 @@ export const VanBuilder: React.FC = () => {
                          category.charAt(0).toUpperCase() + category.slice(1)}
                   isActive={activeCategory === category}
                   isCompleted={completedCategories.includes(category)}
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => {
+                    if (activeCategory === category) {
+                      // If clicking on the active category, close it
+                      setActiveCategory(null);
+                    } else {
+                      // Otherwise, open the clicked category
+                      setActiveCategory(category);
+                    }
+                  }}
                 />
                 
                 {/* Options drawer with animation */}
@@ -960,7 +975,7 @@ export const VanBuilder: React.FC = () => {
         </div>
 
         {/* Center - Van Visualization with improved styling */}
-        <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+        <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-xl mx-4">
           {/* Background pattern */}
           <div className="absolute inset-0 bg-opacity-5 pointer-events-none">
             <div className="absolute inset-0 opacity-5">
@@ -975,156 +990,147 @@ export const VanBuilder: React.FC = () => {
             </div>
           </div>
           
-          {/* View controls - moved closer to top for space efficiency */}
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 p-2 rounded-xl bg-white/90 backdrop-blur-sm shadow-md z-10">
-            <ToggleGroup type="single" value={activeView} onValueChange={(value) => value && setActiveView(value as ViewType)}>
-              <ToggleGroupItem value="interior" aria-label="Interior View">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 2a8 8 0 100 16 8 8 0 000-16z" />
-                </svg>
+          {/* View controls - Menubar for view selection - now centered */}
+          <div className="absolute top-4 left-0 right-0 mx-auto z-10 flex justify-center">
+            <Menubar className="bg-white/90 backdrop-blur-sm shadow-md">
+              <MenubarItem 
+                onClick={() => setActiveView('interior')} 
+                className={cn(
+                  "transition-colors",
+                  activeView === 'interior' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
+                )}
+              >
                 Interior
-              </ToggleGroupItem>
-              <ToggleGroupItem value="exterior" aria-label="Exterior View">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zM5.172 8.757a.5.5 0 01.707 0L10 12.879l4.121-4.122a.5.5 0 11.707.707l-4.475 4.475a.5.5 0 01-.707 0L5.172 9.464a.5.5 0 010-.707z" clipRule="evenodd" />
-                </svg>
+              </MenubarItem>
+              <MenubarItem 
+                onClick={() => setActiveView('exterior')} 
+                className={cn(
+                  "transition-colors",
+                  activeView === 'exterior' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
+                )}
+              >
                 Exterior
-              </ToggleGroupItem>
-              <ToggleGroupItem value="rear" aria-label="Rear View">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                </svg>
+              </MenubarItem>
+              <MenubarItem 
+                onClick={() => setActiveView('rear')} 
+                className={cn(
+                  "transition-colors",
+                  activeView === 'rear' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
+                )}
+              >
                 Rear
-              </ToggleGroupItem>
-              <ToggleGroupItem value="reartop" aria-label="Rear Top View">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                </svg>
+              </MenubarItem>
+              <MenubarItem 
+                onClick={() => setActiveView('reartop')} 
+                className={cn(
+                  "transition-colors",
+                  activeView === 'reartop' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
+                )}
+              >
                 Top
-              </ToggleGroupItem>
-            </ToggleGroup>
+              </MenubarItem>
+            </Menubar>
           </div>
 
-          <div className="absolute inset-0 flex items-center justify-center p-6 pt-14 pb-20">
+          <div className="absolute inset-0 flex items-center justify-center pt-14 pb-20 scale-125">
             {/* Enhanced Van Visualization */}
             <VanImageVisualization 
               imagePath={getVanImagePath()}
               view={activeView}
               opacity={imageOpacity}
             />
-                    </div>
+          </div>
           
-          {/* Updated configuration progress at the bottom */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm shadow-md p-3 rounded-xl w-2/3 max-w-lg">
+          {/* Updated configuration progress at the bottom - now centered */}
+          <div className="absolute bottom-6 left-0 right-0 mx-auto bg-white/90 backdrop-blur-sm shadow-lg p-3 rounded-xl w-[340px] border border-gray-100 z-10">
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="font-semibold text-sm">Configuration Progress</span>
               </div>
-              <span className="font-medium text-sm text-[#F8BC40]">
+              <span className="font-medium text-sm text-green-600">
                 {calculateProgressPercentage()}%
               </span>
             </div>
             
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className="bg-[#F8BC40] h-2 rounded-full transition-all duration-500" 
+                className="bg-green-600 h-2 rounded-full transition-all duration-500" 
                 style={{ width: `${calculateProgressPercentage()}%` }}
               ></div>
             </div>
           </div>
         </div>
 
-        {/* Right sidebar - Price summary */}
-        <div className="w-96 flex flex-col self-start bg-white/30 backdrop-blur-sm border-l border-white/50 h-full">
-          <div className="p-4">
-            <h2 className="text-lg font-bold text-gray-800 mb-1">Build Summary</h2>
-            <p className="text-gray-600 text-xs mb-2">Your custom van configuration</p>
-            <Separator className="mb-3" />
-          </div>
-          
-          {/* Scrollable content area for cards */}
-          <div className="overflow-y-auto custom-scrollbar flex-1 px-4 pb-4">
-            {/* Remove Configuration Summary box and keep only Price Summary */}
-            <div className="slide-in">
-              <Card className="shadow-md border border-gray-100">
-                <CardHeader className="pb-2 bg-gradient-to-r from-white to-gray-50 py-3">
-                  <CardTitle className="text-base flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Price Breakdown
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 font-medium">Chassis:</span>
-                    <div className="flex flex-col items-end">
-                      <span className="font-medium text-sm">
-                        {chassisOptions.find(c => c.id === configuration.chassisId)?.name || 'Not selected'}
-                      </span>
-                      <span className="font-semibold text-[#F8BC40]">
-                        ${getVehicleChassisPrice().toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 font-medium">Base Package:</span>
-                    <div className="flex flex-col items-end">
-                      <span className="font-medium text-sm">
-                        {modelPackages.find(m => m.id === configuration.modelId)?.name || 'Not selected'}
-                      </span>
-                      <span className="font-semibold text-[#F8BC40]">
-                        ${getBasePackagePrice().toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 font-medium">Color:</span>
-                    <span className="font-medium">
-                      {colorOptions.find(c => c.id === configuration.color)?.name || 'Not selected'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 font-medium">Upgrades ({configuration.selectedOptions.length}):</span>
-                    <span className="font-semibold text-[#F8BC40]">${getUpgradesTotal().toLocaleString()}</span>
-                  </div>
-                  
-                  <Separator className="my-3" />
-                  
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="font-bold text-gray-800 text-lg">Total:</span>
-                    <span className="font-bold text-xl text-[#F8BC40]">${calculateTotal().toLocaleString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+        {/* Right sidebar - Price summary - vertically centered */}
+        <div className="w-96 flex flex-col overflow-hidden rounded-xl shadow-lg bg-white/90 backdrop-blur-sm self-center" style={{ maxHeight: "80vh" }}>
+          <div className="py-3 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100 rounded-t-xl">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Price Breakdown
+            </h2>
           </div>
 
-          {/* Action buttons */}
-          <div className="p-4 border-t border-gray-200/50 bg-white/40">
-            <Button
-              className="w-full mb-3 bg-[#F8BC40] hover:bg-[#E6AB30] text-white"
-              onClick={() => setEmailModalOpen(true)}
-            >
-              <span className="mr-2">Save Configuration</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-            </Button>
-            
-              <Button
-              variant="outline"
-              className="w-full border border-gray-300 hover:bg-gray-100 text-gray-700"
-              onClick={() => window.location.reload()}
-              >
-              Reset Configuration
-              </Button>
+          {/* Scrollable content area for cards */}
+          <div className="overflow-y-auto custom-scrollbar flex-1 px-4 pb-4 pt-3">
+            {/* Enhanced Price Summary Box */}
+            <div className="slide-in space-y-4">
+              <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm h-16">
+                <span className="text-gray-700 font-medium">Chassis:</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-medium text-sm">
+                    {chassisOptions.find(c => c.id === configuration.chassisId)?.name || <span className="text-gray-500 text-sm">Not selected</span>}
+                  </span>
+                  <span className="font-semibold text-[#F8BC40] text-base">
+                    ${getVehicleChassisPrice().toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm h-16">
+                <span className="text-gray-700 font-medium">Base Package:</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-medium text-sm">
+                    {modelPackages.find(m => m.id === configuration.modelId)?.name || <span className="text-gray-500 text-sm">Not selected</span>}
+                  </span>
+                  <span className="font-semibold text-[#F8BC40] text-base">
+                    ${getBasePackagePrice().toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm h-16">
+                <span className="text-gray-700 font-medium">Upgrades:</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm text-gray-600">{configuration.selectedOptions.length} items</span>
+                  <span className="font-semibold text-[#F8BC40] text-base">${getUpgradesTotal().toLocaleString()}</span>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-[#F8BC40]/10 rounded-xl h-16">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-gray-800 text-lg">Total Price:</span>
+                  <span className="font-bold text-xl text-[#F8BC40]">${calculateTotal().toLocaleString()}</span>
+                </div>
+              </div>
+              
+              {/* Action buttons moved inside the price breakdown component */}
+              <div className="mt-6">
+                <Button
+                  className="w-full bg-white hover:bg-green-600 hover:text-white text-gray-800 font-semibold py-3 border border-gray-300 transition-colors duration-200 rounded-lg shadow-sm"
+                  onClick={() => setEmailModalOpen(true)}
+                >
+                  <span className="mr-2">Let's Build!</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
