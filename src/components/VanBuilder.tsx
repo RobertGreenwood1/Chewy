@@ -650,7 +650,7 @@ export const VanBuilder: React.FC = () => {
     <div className="py-2 space-y-1 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3">
       {modelPackages.map(model => (
         <OptionItem 
-          key={model.id}
+              key={model.id}
           isSelected={configuration.modelId === model.id}
           name={model.name}
           price={model.price}
@@ -659,8 +659,8 @@ export const VanBuilder: React.FC = () => {
             handleModelSelect(model.id);
           }}
         />
-      ))}
-    </div>
+          ))}
+        </div>
   );
 
   const renderColorOptions = () => (
@@ -675,8 +675,8 @@ export const VanBuilder: React.FC = () => {
             handleColorSelect(color.id);
           }}
         />
-      ))}
-    </div>
+          ))}
+        </div>
   );
 
   const renderElectricalOptions = () => (
@@ -902,8 +902,11 @@ export const VanBuilder: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans']">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans']">
       <GlobalStyles />
+      
+      {/* Add top spacing */}
+      <div className="h-12"></div>
       
       {/* Main content section with fixed height */}
       <div className="flex flex-1 overflow-hidden p-6 gap-6">
@@ -1022,7 +1025,7 @@ export const VanBuilder: React.FC = () => {
               </MenubarItem>
               <MenubarItem 
                 onClick={() => setActiveView('reartop')} 
-                className={cn(
+                      className={cn(
                   "transition-colors",
                   activeView === 'reartop' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
                 )}
@@ -1030,7 +1033,7 @@ export const VanBuilder: React.FC = () => {
                 Top
               </MenubarItem>
             </Menubar>
-          </div>
+                    </div>
 
           <div className="absolute inset-0 flex items-center justify-center pt-14 pb-20 scale-125">
             {/* Enhanced Van Visualization */}
@@ -1039,7 +1042,7 @@ export const VanBuilder: React.FC = () => {
               view={activeView}
               opacity={imageOpacity}
             />
-          </div>
+                </div>
           
           {/* Updated configuration progress at the bottom - now centered */}
           <div className="absolute bottom-6 left-0 right-0 mx-auto bg-white/90 backdrop-blur-sm shadow-lg p-3 rounded-xl w-[340px] border border-gray-100 z-10">
@@ -1065,7 +1068,7 @@ export const VanBuilder: React.FC = () => {
         </div>
 
         {/* Right sidebar - Price summary - vertically centered */}
-        <div className="w-96 flex flex-col overflow-hidden rounded-xl shadow-lg bg-white/90 backdrop-blur-sm self-center" style={{ maxHeight: "80vh" }}>
+        <div className="w-80 flex flex-col overflow-hidden rounded-xl shadow-lg bg-white/90 backdrop-blur-sm self-center" style={{ maxHeight: "80vh" }}>
           <div className="py-3 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100 rounded-t-xl">
             <h2 className="text-lg font-bold text-gray-800 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1120,20 +1123,23 @@ export const VanBuilder: React.FC = () => {
               
               {/* Action buttons moved inside the price breakdown component */}
               <div className="mt-6">
-                <Button
+            <Button
                   className="w-full bg-white hover:bg-green-600 hover:text-white text-gray-800 font-semibold py-3 border border-gray-300 transition-colors duration-200 rounded-lg shadow-sm"
                   onClick={() => setEmailModalOpen(true)}
-                >
+            >
                   <span className="mr-2">Let's Build!</span>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                </Button>
+            </Button>
               </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Add bottom spacing */}
+      <div className="h-12"></div>
       
       {/* Enhanced Email Modal */}
       <EmailModal 
