@@ -1,45 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { vanModels, chassisOptions, customizationOptions, colorOptions } from '../data/vanData';
+import { chassisOptions, customizationOptions, colorOptions, cabinetOptions } from '../data/vanData';
 import { cn } from '../lib/utils';
-import type { VanConfiguration, CustomizationOption } from '../types';
-import testImage from '../assets/test.png'; // Adjust the path as needed
-import logo from '../assets/logo.png'; // Add this import at the top with other imports
-import '../styles/fonts.css'; // Import the custom fonts
+import type { VanConfiguration } from '../types';
+import testImage from '../assets/test.png';
+import '../styles/fonts.css';
+
+// Import cabinet images
+import wcImage from '../assets/wc.png';
+import wcbImage from '../assets/wb.png';
+import gcImage from '../assets/gc.png';
+import gcbImage from '../assets/gb.png';
 
 // Import ShadCN components
 import { Button } from './ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
-import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
-import { Checkbox } from './ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Separator } from './ui/separator';
-import { Badge } from './ui/badge';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import { Menubar, MenubarItem } from './ui/menubar';
+import { Switch } from './ui/switch';
+import { Checkbox } from './ui/checkbox';
 
 // Define the category types
 type CategoryType = 
   | 'chassis' 
   | 'colors' 
   | 'models' 
-  | 'laminate' 
   | 'upholstery' 
   | 'electrical' 
   | 'heating'
   | 'exterior' 
-  | 'storage' 
   | 'bathroom' 
   | 'kitchen' 
   | 'lighting'
-  | 'offgrid'
-  | 'security';
+  | 'power'
+  | 'cabinets';
 
 type ViewType = 'interior' | 'exterior' | 'rear' | 'reartop';
 
 // Define the order of categories
 const CATEGORY_ORDER: CategoryType[] = [
-  'chassis', 'colors', 'models', 'laminate', 'upholstery', 'electrical', 'heating',
-  'exterior', 'storage', 'bathroom', 'kitchen', 'lighting', 'offgrid', 'security'
+  'chassis', 'colors', 'models', 'cabinets', 'upholstery', 'electrical', 'heating',
+  'exterior', 'bathroom', 'kitchen', 'lighting', 'power'
 ];
 
 interface CategoryProps {
@@ -388,7 +387,7 @@ export const VanBuilder: React.FC = () => {
   const [completedCategories, setCompletedCategories] = useState<CategoryType[]>([]);
   
   // Active view state
-  const [activeView, setActiveView] = useState<ViewType>('exterior');
+  const [activeView, setActiveView] = useState<ViewType>('interior');
   
   // Configuration state
   const [configuration, setConfiguration] = useState<VanConfiguration>({
@@ -398,13 +397,13 @@ export const VanBuilder: React.FC = () => {
     selectedOptions: [],
   });
 
-  // Predefined custom option lists for better state management
-  const laminateOptions = [
-    { id: 'laminate-oak', name: 'Oak Finish', price: 1200 },
-    { id: 'laminate-maple', name: 'Maple Finish', price: 1500 },
-    { id: 'laminate-walnut', name: 'Walnut Finish', price: 1800 },
-  ];
+  // Bed toggle state
+  const [hasBed, setHasBed] = useState(false);
   
+  // Selected cabinet color
+  const [selectedCabinet, setSelectedCabinet] = useState<string>('');
+
+  // Predefined custom option lists for better state management
   const upholsteryOptions = [
     { id: 'upholstery-leather', name: 'Premium Leather', price: 3000 },
     { id: 'upholstery-fabric', name: 'Durable Fabric', price: 1500 },
@@ -413,61 +412,52 @@ export const VanBuilder: React.FC = () => {
   
   const heatingOptions = [
     { id: 'heating-diesel', name: 'Diesel Heater System', price: 2500 },
-    { id: 'heating-propane', name: 'Propane Heating', price: 1800 },
     { id: 'heating-ac', name: 'Air Conditioning', price: 3500 },
   ];
   
   // Add these arrays with the other predefined option lists
 
   const exteriorOptions = [
-    { id: 'exterior-awning', name: 'Retractable Awning', price: 1800 },
-    { id: 'exterior-ladder', name: 'Roof Access Ladder', price: 800 },
-    { id: 'exterior-bikemount', name: 'Bike Mount (2 Bikes)', price: 950 },
-    { id: 'exterior-solarpanels', name: 'Solar Panel Package (200W)', price: 2400 },
-  ];
-
-  const storageOptions = [
-    { id: 'storage-garage', name: 'Rear Garage Storage', price: 1200 },
-    { id: 'storage-overhead', name: 'Overhead Cabinets', price: 2400 },
-    { id: 'storage-underbed', name: 'Under-bed Storage System', price: 1800 },
-    { id: 'storage-drawers', name: 'Custom Drawer System', price: 1500 },
+    { id: 'exterior-awning', name: 'Feeama 45s Awning', price: 1695 },
+    { id: 'exterior-awning-motorized', name: 'Feeama 45s Awning Motorized', price: 2195 },
+    { id: 'exterior-roofrack', name: 'Flatline LowPro Roofrack', price: 1895 },
+    { id: 'exterior-frontbumper', name: 'Flatline VanCo Front bumper', price: 1495 },
+    { id: 'exterior-bullbar', name: 'Front BullBar', price: 995 },
+    { id: 'exterior-skidplate', name: 'Skidplate', price: 795 },
+    { id: 'exterior-winch', name: 'Warner VR Evo 12s Winch', price: 1295 },
+    { id: 'exterior-rearbumper', name: 'Flatline Van Co Rearbumper', price: 1495 },
+    { id: 'exterior-ladder', name: 'Sprinter Side Latter Wheel Wrap', price: 895 },
+    { id: 'exterior-sidesteps', name: 'Sprinter Van Side Steps', price: 795 },
+    { id: 'exterior-storagebox', name: 'Van Rear Storage Box', price: 995 },
+    { id: 'exterior-platform', name: 'Sprinter Van Rear Door Platform', price: 895 }
   ];
 
   const bathroomOptions = [
     { id: 'bathroom-toilet', name: 'Composting Toilet', price: 1200 },
     { id: 'bathroom-shower', name: 'Indoor Shower System', price: 3500 },
-    { id: 'bathroom-sink', name: 'Bathroom Sink & Vanity', price: 1800 },
-    { id: 'bathroom-outdoorshower', name: 'Outdoor Shower Kit', price: 650 },
+    { id: 'bathroom-outdoorshower', name: 'Outdoor Shower', price: 650 }
   ];
 
   const kitchenOptions = [
-    { id: 'kitchen-stove', name: 'Propane 2-Burner Stove', price: 850 },
-    { id: 'kitchen-sink', name: 'Stainless Steel Sink', price: 550 },
-    { id: 'kitchen-fridge', name: '12V Refrigerator', price: 1200 },
-    { id: 'kitchen-countertop', name: 'Premium Countertop Upgrade', price: 900 },
+    { id: 'kitchen-stove-mounted', name: '2 Burner Stove Mounted', price: 950 },
+    { id: 'kitchen-stove-unmounted', name: '2 Burner Stove Unmounted', price: 850 },
+    { id: 'kitchen-countertop-teak', name: 'Teak Countertop', price: 1200 },
+    { id: 'kitchen-countertop-walnut', name: 'Walnut Countertop', price: 1100 },
+    { id: 'kitchen-countertop-maple', name: 'Maple Countertop', price: 900 }
   ];
 
   const lightingOptions = [
-    { id: 'lighting-led', name: 'LED Lighting Package', price: 800 },
-    { id: 'lighting-dimmer', name: 'Dimmer Switch System', price: 350 },
+    { id: 'lighting-premium', name: 'Premium Lighting', price: 1200 },
     { id: 'lighting-accent', name: 'Accent Lighting', price: 450 },
-    { id: 'lighting-exterior', name: 'Exterior Lighting Package', price: 600 },
+    { id: 'lighting-exterior', name: 'Exterior Lighting', price: 600 }
   ];
 
-  const offgridOptions = [
-    { id: 'offgrid-battery', name: 'Lithium Battery System (200Ah)', price: 3500 },
-    { id: 'offgrid-inverter', name: '2000W Pure Sine Inverter', price: 1200 },
-    { id: 'offgrid-solar', name: 'Additional Solar (300W)', price: 2800 },
-    { id: 'offgrid-alternator', name: 'DC-DC Charging System', price: 850 },
+  const powerOptions = [
+    { id: 'power-weekender', name: 'Weekender 300Ah', price: 3500 },
+    { id: 'power-staycool', name: 'Stay Cool 400Ah', price: 4500 },
+    { id: 'power-staycool-extender', name: 'Stay Cool Extender 600Ah', price: 6500 }
   ];
 
-  const securityOptions = [
-    { id: 'security-alarm', name: 'Security Alarm System', price: 1200 },
-    { id: 'security-lockbox', name: 'Hidden Valuables Lockbox', price: 550 },
-    { id: 'security-windows', name: 'Privacy Window Tint', price: 800 },
-    { id: 'security-doorlocks', name: 'Enhanced Door Locks', price: 450 },
-  ];
-  
   // Update the price calculation useEffect:
   useEffect(() => {
     // This ensures price updates are always triggered on config changes
@@ -508,7 +498,7 @@ export const VanBuilder: React.FC = () => {
     const options = configuration.selectedOptions.map(
       optId => customizationOptions.find(opt => opt.id === optId) ||
               // Try to find in our local option arrays
-              [...laminateOptions, ...upholsteryOptions, ...heatingOptions].find(item => item.id === optId)
+              [...upholsteryOptions, ...heatingOptions].find(item => item.id === optId)
     );
 
     total += options.reduce((sum: number, opt) => sum + (opt?.price || 0), 0);
@@ -524,10 +514,9 @@ export const VanBuilder: React.FC = () => {
 
   // Custom model data that maps to our vanModels
   const modelPackages = [
-    { id: 'classic', name: 'Classic Base Package', price: 49995, vanModelId: 'adventure' },
-    { id: 'kronos', name: 'Kronos Base Package', price: 86995, vanModelId: 'expedition' },
-    { id: 'metis', name: 'Metis Base Package', price: 85995, vanModelId: 'adventure' },
-    { id: 'ultra', name: 'Ultra Base Package', price: 99995, vanModelId: 'expedition' },
+    { id: 'sansaba', name: 'Sansaba Package', price: 49995, vanModelId: 'adventure' },
+    { id: 'pedernales', name: 'Pedernales Package', price: 86995, vanModelId: 'expedition' },
+    { id: 'riogrande', name: 'Rio Grande Package', price: 85995, vanModelId: 'adventure' }
   ];
 
   // Get base package price (if model selected, otherwise 0)
@@ -541,7 +530,7 @@ export const VanBuilder: React.FC = () => {
     const options = configuration.selectedOptions.map(
       optId => customizationOptions.find(opt => opt.id === optId) ||
               // Try to find in our local option arrays
-              [...laminateOptions, ...upholsteryOptions, ...heatingOptions].find(item => item.id === optId)
+              [...upholsteryOptions, ...heatingOptions].find(item => item.id === optId)
     );
     return options.reduce((sum: number, opt) => sum + (opt?.price || 0), 0);
   };
@@ -591,35 +580,68 @@ export const VanBuilder: React.FC = () => {
       const isSelected = prev.selectedOptions.includes(optionId);
       
       if (isSelected) {
+        // Remove the option
+        const newOptions = prev.selectedOptions.filter(id => id !== optionId);
+        
+        // Check if this was the last option in the current category
+        const categoryOptions = getCategoryOptions(activeCategory as CategoryType);
+        const hasSelectedOptionsInCategory = categoryOptions.some(opt => 
+          newOptions.includes(opt.id)
+        );
+        
+        // If no more options are selected in this category, remove it from completed
+        if (!hasSelectedOptionsInCategory) {
+          setCompletedCategories(prev => 
+            prev.filter(cat => cat !== activeCategory)
+          );
+        }
+        
         return {
           ...prev,
-          selectedOptions: prev.selectedOptions.filter(id => id !== optionId)
+          selectedOptions: newOptions
         };
       } else {
+        // Add the option and mark category as completed
+        if (!completedCategories.includes(activeCategory as CategoryType)) {
+          setCompletedCategories(prev => Array.from(new Set([...prev, activeCategory as CategoryType])));
+        }
+        
         return {
           ...prev,
           selectedOptions: [...prev.selectedOptions, optionId]
         };
       }
     });
+  };
 
-    // Add the current category to completed based on what type of option was selected
-    if (!completedCategories.includes(activeCategory as CategoryType)) {
-      setCompletedCategories(prev => {
-        // Create a new array with unique values
-        return Array.from(new Set([...prev, activeCategory as CategoryType]));
-      });
+  // Helper function to get options for a specific category
+  const getCategoryOptions = (category: CategoryType) => {
+    switch (category) {
+      case 'electrical':
+        return customizationOptions.filter(opt => opt.category === 'Electrical');
+      case 'upholstery':
+        return upholsteryOptions;
+      case 'heating':
+        return heatingOptions;
+      case 'exterior':
+        return exteriorOptions;
+      case 'bathroom':
+        return bathroomOptions;
+      case 'kitchen':
+        return kitchenOptions;
+      case 'lighting':
+        return lightingOptions;
+      case 'power':
+        return powerOptions;
+      case 'cabinets':
+        return cabinetOptions;
+      default:
+        return [];
     }
   };
 
   // Email modal state
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-
-  // Handle continue button click
-  const handleContinue = () => {
-    // Remove all validation checks and simply open the modal
-    setEmailModalOpen(true);
-  };
   
   // Handle email submission
   const handleEmailSubmit = (email: string) => {
@@ -698,23 +720,6 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
-  const renderLaminateOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
-      {laminateOptions.map(option => (
-        <OptionItem 
-          key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
-          name={option.name}
-          price={option.price}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOptionToggle(option.id);
-          }}
-        />
-      ))}
-    </div>
-  );
-
   const renderUpholsteryOptions = () => (
     <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {upholsteryOptions.map(option => (
@@ -752,23 +757,6 @@ export const VanBuilder: React.FC = () => {
   const renderExteriorOptions = () => (
     <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
       {exteriorOptions.map(option => (
-        <OptionItem 
-          key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
-          name={option.name}
-          price={option.price}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOptionToggle(option.id);
-          }}
-        />
-      ))}
-    </div>
-  );
-
-  const renderStorageOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
-      {storageOptions.map(option => (
         <OptionItem 
           key={option.id} 
           isSelected={configuration.selectedOptions.includes(option.id)}
@@ -834,9 +822,9 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
-  const renderOffgridOptions = () => (
+  const renderPowerOptions = () => (
     <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
-      {offgridOptions.map(option => (
+      {powerOptions.map(option => (
         <OptionItem 
           key={option.id} 
           isSelected={configuration.selectedOptions.includes(option.id)}
@@ -851,26 +839,59 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
-  const renderSecurityOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
-      {securityOptions.map(option => (
-        <OptionItem 
-          key={option.id}
-          isSelected={configuration.selectedOptions.includes(option.id)}
-          name={option.name}
-          price={option.price}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOptionToggle(option.id);
-          }}
-        />
-      ))}
+  // Cabinet selection handler
+  const handleCabinetSelect = (cabinetId: string) => {
+    // Remove any previous cabinet selection from options
+    const filteredOptions = configuration.selectedOptions.filter(
+      opt => !opt.includes('cabinet')
+    );
+    
+    // Add the new cabinet selection
+    setSelectedCabinet(cabinetId);
+    console.log("Selected cabinet:", cabinetId); // Debug log
+    
+    setConfiguration({
+      ...configuration,
+      selectedOptions: [...filteredOptions, cabinetId]
+    });
+    
+    // Mark the category as completed
+    if (!completedCategories.includes('cabinets')) {
+      setCompletedCategories([...completedCategories, 'cabinets']);
+    }
+  };
+
+  // Render cabinet options
+  const renderCabinetsOptions = () => (
+    <div className="p-2 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-2 relative z-0">
+      <div className="space-y-1">
+        {cabinetOptions.map((cabinet) => (
+          <OptionItem 
+            key={cabinet.id}
+            isSelected={selectedCabinet === cabinet.id}
+            name={cabinet.name}
+            price={cabinet.price}
+            onClick={() => handleCabinetSelect(cabinet.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 
-  // Update the getVanImagePath function to use the correct path
+  // Update the getVanImagePath function to use the cabinet images based on selection and bed toggle
   const getVanImagePath = () => {
-    // Use the imported image
+    if (activeView === 'interior') {
+      console.log("Current cabinet selection:", selectedCabinet, "Bed:", hasBed); // Debug log
+      
+      if (selectedCabinet === 'cabinet-white') {
+        console.log("Using white cabinet image:", hasBed ? "with bed" : "no bed"); // Debug log
+        return hasBed ? wcbImage : wcImage;
+      } else if (selectedCabinet === 'cabinet-painted' || selectedCabinet === 'cabinet-alder') {
+        console.log("Using painted/alder cabinet image:", hasBed ? "with bed" : "no bed"); // Debug log
+        return hasBed ? gcbImage : gcImage;
+      }
+    }
+    // Default to test image for other views
     return testImage;
   };
 
@@ -929,12 +950,11 @@ export const VanBuilder: React.FC = () => {
                          category === 'electrical' ? 'Electrical & Connectivity' :
                          category === 'heating' ? 'Heating & Cooling' :
                          category === 'exterior' ? 'Exterior Features' :
-                         category === 'storage' ? 'Storage Solutions' :
                          category === 'bathroom' ? 'Bathroom Options' :
                          category === 'kitchen' ? 'Kitchen Features' :
                          category === 'lighting' ? 'Lighting Systems' :
-                         category === 'offgrid' ? 'Off-Grid Power' :
-                         category === 'security' ? 'Security Features' :
+                         category === 'power' ? 'Power' :
+                         category === 'cabinets' ? 'Cabinets' :
                          category.charAt(0).toUpperCase() + category.slice(1)}
                   isActive={activeCategory === category}
                   isCompleted={completedCategories.includes(category)}
@@ -957,16 +977,14 @@ export const VanBuilder: React.FC = () => {
                     {category === 'models' && renderModelOptions()}
                     {category === 'colors' && renderColorOptions()}
                     {category === 'electrical' && renderElectricalOptions()}
-                    {category === 'laminate' && renderLaminateOptions()}
                     {category === 'upholstery' && renderUpholsteryOptions()}
                     {category === 'heating' && renderHeatingOptions()}
                     {category === 'exterior' && renderExteriorOptions()}
-                    {category === 'storage' && renderStorageOptions()}
                     {category === 'bathroom' && renderBathroomOptions()}
                     {category === 'kitchen' && renderKitchenOptions()}
                     {category === 'lighting' && renderLightingOptions()}
-                    {category === 'offgrid' && renderOffgridOptions()}
-                    {category === 'security' && renderSecurityOptions()}
+                    {category === 'power' && renderPowerOptions()}
+                    {category === 'cabinets' && renderCabinetsOptions()}
                   </div>
                 )}
               </div>
@@ -991,8 +1009,8 @@ export const VanBuilder: React.FC = () => {
           </div>
           
           {/* View controls - Menubar for view selection - now centered */}
-          <div className="absolute top-4 left-0 right-0 mx-auto z-10 flex justify-center">
-            <Menubar className="bg-white/90 backdrop-blur-sm shadow-md">
+          <div className="absolute top-4 left-0 right-0 mx-auto z-10 flex flex-col items-center">
+            <Menubar className="bg-white/90 backdrop-blur-sm shadow-md mb-2">
               <MenubarItem 
                 onClick={() => setActiveView('interior')} 
                 className={cn(
@@ -1030,7 +1048,19 @@ export const VanBuilder: React.FC = () => {
                 Top
               </MenubarItem>
             </Menubar>
-                    </div>
+            
+            {/* Bed toggle switch */}
+            {activeView === 'interior' && selectedCabinet && (
+              <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm shadow-md p-2 rounded-lg">
+                <span className="text-sm font-medium">Bed</span>
+                <Switch 
+                  checked={hasBed} 
+                  onCheckedChange={setHasBed} 
+                  id="bed-toggle" 
+                />
+              </div>
+            )}
+          </div>
 
           <div className="absolute inset-0 flex items-center justify-center pt-14 pb-20 scale-125">
             {/* Enhanced Van Visualization */}
@@ -1039,7 +1069,7 @@ export const VanBuilder: React.FC = () => {
               view={activeView}
               opacity={imageOpacity}
             />
-                </div>
+          </div>
           
           {/* Updated configuration progress at the bottom - now centered */}
           <div className="absolute bottom-6 left-0 right-0 mx-auto bg-white/90 backdrop-blur-sm shadow-lg p-3 rounded-xl w-[340px] border border-gray-100 z-10">

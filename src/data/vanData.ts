@@ -65,3 +65,10 @@ export const colorOptions = [
   { id: 'black', name: 'Midnight Black', hex: '#222222' },
   { id: 'blue', name: 'Ocean Blue', hex: '#1E3D59' }
 ];
+
+// Cabinet options
+export const cabinetOptions = [
+  { id: 'cabinet-painted', name: 'Painted', price: 2500 },
+  { id: 'cabinet-white', name: 'White', price: 2500 },
+  { id: 'cabinet-alder', name: 'Finished Alder', price: 2800 }
+];
