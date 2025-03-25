@@ -10,6 +10,7 @@ import wcImage from '../assets/wc.png';
 import wcbImage from '../assets/wb.png';
 import gcImage from '../assets/gc.png';
 import gcbImage from '../assets/gb.png';
+import logo from '../assets/logo.png';
 
 // Import ShadCN components
 import { Button } from './ui/button';
@@ -54,7 +55,7 @@ const Category: React.FC<CategoryProps> = ({ title, isActive, isCompleted, onCli
   
   if (isActive) {
     icon = (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
       </svg>
     );
@@ -75,37 +76,69 @@ const Category: React.FC<CategoryProps> = ({ title, isActive, isCompleted, onCli
   return (
     <div 
       className={cn(
-        "py-3 px-4 cursor-pointer font-medium relative transition-all duration-200 my-1 mx-2 rounded-lg",
+        "py-3.5 px-4 cursor-pointer font-medium relative transition-all duration-200 mx-3 rounded-lg",
         isActive 
           ? "bg-[#F8BC40] text-white shadow-sm" 
           : isCompleted
             ? "text-gray-700 hover:bg-white/50 border-l-4 border-green-500"
-            : "text-gray-700 hover:bg-white/50 hover:shadow-sm",
+            : "text-gray-600 hover:bg-white/50 hover:text-gray-900",
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
-        <span className="text-sm uppercase tracking-wider font-semibold leading-tight" style={{ wordBreak: "break-word" }}>{title}</span>
-        <div className="ml-2 mt-0.5">{icon}</div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm tracking-wide font-medium leading-none">{title}</span>
+        <div className="ml-3 flex-shrink-0">{icon}</div>
       </div>
     </div>
   );
 };
 
-// Updated EmailModal with ShadCN components
-const EmailModal: React.FC<{
+interface EmailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (email: string) => void;
-}> = ({ isOpen, onClose, onSubmit }) => {
+  selectedChassis: Chassis | null;
+  selectedModel: Model | null;
+  selectedColor: string;
+  selectedOptions: string[];
+  totalPrice: number;
+  getUpgradesTotal: () => number;
+  calculateTotal: () => number;
+  upholsteryOptions: Array<{ id: string; name: string; price: number; }>;
+  heatingOptions: Array<{ id: string; name: string; price: number; }>;
+  customizationOptions: Array<{ id: string; name: string; price: number; category: string; }>;
+}
+
+const EmailModal: React.FC<EmailModalProps> = ({ 
+  isOpen, 
+  onClose,
+  selectedChassis,
+  selectedModel,
+  selectedColor,
+  selectedOptions,
+  totalPrice,
+  getUpgradesTotal,
+  calculateTotal,
+  upholsteryOptions,
+  heatingOptions,
+  customizationOptions
+}) => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [favoriteband, setFavoriteBand] = useState('');
+  const [comments, setComments] = useState('');
+  const [location, setLocation] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Reset email and error when modal opens/closes
   useEffect(() => {
     if (isOpen) {
+      setName('');
       setEmail('');
+      setPhone('');
+      setFavoriteBand('');
+      setComments('');
+      setLocation('');
       setError('');
       setIsSubmitting(false);
     }
@@ -113,20 +146,204 @@ const EmailModal: React.FC<{
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simple email validation
+    setIsSubmitting(true);
+    setError('');
+
+    // Validation
+    if (!name.trim()) {
+      setError('Please enter your name');
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       setError('Please enter a valid email address');
+      setIsSubmitting(false);
       return;
     }
     
-    setIsSubmitting(true);
-    
-    // Simulate a slight delay for better UX
-    setTimeout(() => {
-      onSubmit(email);
+    if (!phone.trim()) {
+      setError('Please enter your phone number');
       setIsSubmitting(false);
-    }, 800);
+      return;
+    }
+    
+    if (!favoriteband.trim()) {
+      setError('Please enter your favorite band');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      // Format the configuration details in a readable way
+      const formattedConfig = {
+        // Customer Details
+        customer_details: {
+          name,
+          email,
+          phone,
+          favorite_band: favoriteband
+        },
+        
+        // Base Configuration
+        base_configuration: {
+          chassis: selectedChassis ? {
+            model: selectedChassis.name,
+            price: `$${selectedChassis.priceAdjustment.toLocaleString()}`
+          } : 'Not Selected',
+          
+          package: selectedModel ? {
+            name: selectedModel.name,
+            price: `$${selectedModel.price.toLocaleString()}`
+          } : 'Not Selected',
+          
+          exterior_color: selectedColor.replace('silver', 'Silver')
+            .replace('white', 'Arctic White')
+            .replace('black', 'Obsidian Black')
+            .replace('gray', 'Tenorite Gray') || 'Not Selected'
+        },
+
+        // Selected Upgrades
+        selected_upgrades: {
+          // Cabinet Options
+          cabinets: selectedOptions.find(opt => opt.includes('cabinet-'))?.replace('cabinet-alder', 'Finished Alder')
+            .replace('cabinet-white', 'White')
+            .replace('cabinet-painted', 'Painted') || 'None Selected',
+          
+          // Upholstery Options
+          upholstery: selectedOptions.filter(opt => opt.includes('upholstery-')).map(opt => 
+            opt.replace('upholstery-leather', 'Premium Leather')
+              .replace('upholstery-fabric', 'Durable Fabric')
+              .replace('upholstery-vinyl', 'Marine-Grade Vinyl')
+          ),
+          
+          // Heating & Cooling
+          climate_control: selectedOptions.filter(opt => opt.includes('heating-')).map(opt =>
+            opt.replace('heating-diesel', 'Diesel Heater System')
+              .replace('heating-ac', 'Air Conditioning')
+          ),
+          
+          // Exterior Features
+          exterior_features: selectedOptions.filter(opt => opt.includes('exterior-')).map(opt =>
+            opt.replace('exterior-awning-motorized', 'Motorized Feeama 45s Awning')
+              .replace('exterior-awning', 'Feeama 45s Awning')
+              .replace('exterior-roofrack', 'Flatline LowPro Roofrack')
+              .replace('exterior-frontbumper', 'Flatline VanCo Front Bumper')
+              .replace('exterior-bullbar', 'Front BullBar')
+              .replace('exterior-skidplate', 'Skidplate')
+              .replace('exterior-winch', 'Warner VR Evo 12s Winch')
+              .replace('exterior-rearbumper', 'Flatline Van Co Rear Bumper')
+              .replace('exterior-ladder', 'Sprinter Side Ladder Wheel Wrap')
+              .replace('exterior-sidesteps', 'Sprinter Van Side Steps')
+              .replace('exterior-storagebox', 'Van Rear Storage Box')
+              .replace('exterior-platform', 'Sprinter Van Rear Door Platform')
+          ),
+          
+          // Bathroom Options
+          bathroom: selectedOptions.filter(opt => opt.includes('bathroom-')).map(opt =>
+            opt.replace('bathroom-toilet', 'Composting Toilet')
+              .replace('bathroom-shower', 'Indoor Shower System')
+              .replace('bathroom-outdoorshower', 'Outdoor Shower')
+          ),
+          
+          // Kitchen Features
+          kitchen: selectedOptions.filter(opt => opt.includes('kitchen-')).map(opt =>
+            opt.replace('kitchen-stove-mounted', '2 Burner Stove Mounted')
+              .replace('kitchen-stove-unmounted', '2 Burner Stove Unmounted')
+              .replace('kitchen-countertop-teak', 'Teak Countertop')
+              .replace('kitchen-countertop-walnut', 'Walnut Countertop')
+              .replace('kitchen-countertop-maple', 'Maple Countertop')
+          ),
+          
+          // Lighting Systems
+          lighting: selectedOptions.filter(opt => opt.includes('lighting-')).map(opt =>
+            opt.replace('lighting-premium', 'Premium Lighting')
+              .replace('lighting-accent', 'Accent Lighting')
+              .replace('lighting-exterior', 'Exterior Lighting')
+          ),
+          
+          // Power Systems
+          power: selectedOptions.filter(opt => opt.includes('power-')).map(opt =>
+            opt.replace('power-weekender', 'Weekender 300Ah')
+              .replace('power-staycool', 'Stay Cool 400Ah')
+              .replace('power-staycool-extender', 'Stay Cool Extender 600Ah')
+          )
+        },
+
+        // Pricing Summary
+        pricing_summary: {
+          base_chassis_price: `$${selectedChassis?.priceAdjustment.toLocaleString() || 0}`,
+          package_price: `$${selectedModel?.price.toLocaleString() || 0}`,
+          upgrades_total: `$${getUpgradesTotal().toLocaleString()}`,
+          total_price: `$${calculateTotal().toLocaleString()}`
+        }
+      };
+
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_key: '245e3966-536c-4be0-a992-fbcf0467bb7d',
+          from_name: name,
+          subject: `Van Configuration Request - ${name} - ${selectedModel?.name || 'Package Not Selected'}`,
+          message: `Van Configuration Summary
+------------------------
+Base Van: ${selectedChassis?.name || 'Not Selected'} - $${selectedChassis?.priceAdjustment.toLocaleString() || 0}
+Package: ${selectedModel?.name || 'Not Selected'} - $${selectedModel?.price.toLocaleString() || 0}
+Color: ${formattedConfig.base_configuration.exterior_color}
+
+Selected Options
+---------------
+${selectedOptions.length > 0 ? `
+Interior
+• Cabinets: ${formattedConfig.selected_upgrades.cabinets}
+• Upholstery: ${Array.isArray(formattedConfig.selected_upgrades.upholstery) ? formattedConfig.selected_upgrades.upholstery.join(', ') : 'None'}
+• Kitchen: ${Array.isArray(formattedConfig.selected_upgrades.kitchen) ? formattedConfig.selected_upgrades.kitchen.join(', ') : 'None'}
+• Bathroom: ${Array.isArray(formattedConfig.selected_upgrades.bathroom) ? formattedConfig.selected_upgrades.bathroom.join(', ') : 'None'}
+
+Systems
+• Climate: ${Array.isArray(formattedConfig.selected_upgrades.climate_control) ? formattedConfig.selected_upgrades.climate_control.join(', ') : 'None'}
+• Power: ${Array.isArray(formattedConfig.selected_upgrades.power) ? formattedConfig.selected_upgrades.power.join(', ') : 'None'}
+• Lighting: ${Array.isArray(formattedConfig.selected_upgrades.lighting) ? formattedConfig.selected_upgrades.lighting.join(', ') : 'None'}
+
+Exterior
+• Features: ${Array.isArray(formattedConfig.selected_upgrades.exterior_features) ? formattedConfig.selected_upgrades.exterior_features.join(', ') : 'None'}` 
+: 'No options selected'}
+
+Customer Details
+---------------
+Name: ${name}
+Email: ${email}
+Phone: ${phone}
+Location: ${location}
+Favorite Band: ${favoriteband}
+
+Price Summary
+------------
+Base Van:     $${selectedChassis?.priceAdjustment.toLocaleString() || 0}
+Package:      $${selectedModel?.price.toLocaleString() || 0}
+Options:      $${getUpgradesTotal().toLocaleString()}
+Total Price:  $${calculateTotal().toLocaleString()}
+
+${comments ? `Additional Notes:\n${comments}` : ''}`
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+      setIsSubmitting(false);
+        onClose();
+        alert('Thank you! We\'ve received your configuration request and will contact you soon.');
+      } else {
+        throw new Error('Failed to send form');
+      }
+    } catch (error) {
+      setError('Failed to send form. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -134,37 +351,48 @@ const EmailModal: React.FC<{
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      <Card className="z-10 w-full max-w-md shadow-2xl">
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-2xl font-bold text-[#F8BC40] flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              Stay Connected
-            </CardTitle>
-            <button 
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-              aria-label="Close"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+      <Card className="z-10 w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl border border-gray-100/50 rounded-2xl my-8">
+        <CardHeader className="pb-1 relative">
+          <div className="flex flex-col items-center">
+            <img src={logo} alt="Chewy Logo" className="h-24 w-auto mb-1" />
           </div>
-          <CardDescription className="text-gray-700 mt-2">
-            We'll send your custom configuration to this email and keep you updated on your Chewy journey.
+          <CardDescription className="text-gray-600 mt-1 text-sm text-center px-4">
+            Enter your information to receive your emailed estimate and more information regarding our process.
           </CardDescription>
         </CardHeader>
         
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+        <CardContent className="space-y-2.5 py-2">
+          <form onSubmit={handleSubmit} className="space-y-2.5">
+            {/* Name Field */}
+            <div className="space-y-1">
+              <label htmlFor="name" className="text-sm font-medium text-gray-700">Your Name</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setError('');
+                  }}
+                  className="w-full pl-9 p-2.5 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F8BC40] focus:border-transparent transition-all text-sm"
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+            
+            {/* Email Field */}
+            <div className="space-y-1">
+              <label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                   </svg>
                 </div>
@@ -176,46 +404,139 @@ const EmailModal: React.FC<{
                     setEmail(e.target.value);
                     setError('');
                   }}
-                  placeholder="youremail@example.com"
-                  className="w-full pl-10 p-3 bg-white border border-gray-200 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F8BC40] focus:border-transparent transition-all"
-                  autoFocus
+                  className="w-full pl-9 p-2.5 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F8BC40] focus:border-transparent transition-all text-sm"
                   required
                 />
               </div>
+            </div>
+            
+            {/* Phone Field */}
+            <div className="space-y-1">
+              <label htmlFor="phone" className="text-sm font-medium text-gray-700">Phone Number</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setError('');
+                  }}
+                  className="w-full pl-9 p-2.5 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F8BC40] focus:border-transparent transition-all text-sm"
+                  required
+                />
+              </div>
+            </div>
+            
+            {/* Location Field */}
+            <div className="space-y-1">
+              <label htmlFor="location" className="text-sm font-medium text-gray-700">Location</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <input
+                  id="location"
+                  type="text"
+                  value={location}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="City, State"
+                  className="w-full pl-9 p-2.5 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F8BC40] focus:border-transparent transition-all text-sm"
+                  required
+                />
+              </div>
+            </div>
+            
+            {/* Favorite Band Field */}
+            <div className="space-y-1">
+              <label htmlFor="favoriteband" className="text-sm font-medium text-gray-700">Favorite Band</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+                <input
+                  id="favoriteband"
+                  type="text"
+                  value={favoriteband}
+                  onChange={(e) => {
+                    setFavoriteBand(e.target.value);
+                    setError('');
+                  }}
+                  className="w-full pl-9 p-2.5 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F8BC40] focus:border-transparent transition-all text-sm"
+                  required
+                />
+              </div>
+            </div>
+            
+            {/* Comments Field */}
+            <div className="space-y-1">
+              <label htmlFor="comments" className="text-sm font-medium text-gray-700 flex items-center justify-between">
+                <span>Comments</span>
+                <span className="text-xs text-gray-500">(Optional)</span>
+              </label>
+              <div className="relative">
+                <textarea
+                  id="comments"
+                  value={comments}
+                  onChange={(e) => {
+                    setComments(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Share your thoughts or any special requests..."
+                  className="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F8BC40] focus:border-transparent transition-all text-sm min-h-[60px] resize-none"
+                />
+              </div>
+            </div>
+            
               {error && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <div className="p-2.5 bg-red-50 border border-red-100 rounded-lg">
+                <p className="text-red-600 text-xs flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                   {error}
                 </p>
-              )}
             </div>
+            )}
           </form>
         </CardContent>
         
-        <CardFooter className="flex justify-end gap-3 mt-4">
+        <CardFooter className="flex justify-end gap-2 pt-1 pb-3">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
+            className="px-4 py-2 rounded-lg border-gray-200 hover:bg-gray-50 transition-colors text-sm"
           >
             Cancel
           </Button>
           <Button
             onClick={(e) => handleSubmit(e as any)}
-            className="gap-2"
             disabled={isSubmitting}
+            className="px-4 py-2 bg-[#F8BC40] hover:bg-[#E6AB30] text-white rounded-lg transition-colors flex items-center gap-2 text-sm"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
                 <span>Sending...</span>
               </>
             ) : (
               <>
                 <span>Submit</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </>
@@ -228,7 +549,7 @@ const EmailModal: React.FC<{
 };
 
 // Updated GlobalStyles component with better animations and scrollbar
-const GlobalStyles = () => (
+const GlobalStyles: React.FC = () => (
   <style dangerouslySetInnerHTML={{
     __html: `
       body {
@@ -308,29 +629,28 @@ const OptionItem = ({
 }) => (
   <div 
     className={cn(
-      "flex items-start justify-between py-3 px-4 text-gray-700 cursor-pointer transition-all duration-200 rounded-md my-1 option-transition",
+      "flex items-start justify-between py-3 px-4 text-gray-700 cursor-pointer transition-all duration-200 rounded-lg",
       isSelected 
-        ? "bg-[#F8BC40]/20 shadow-sm border border-[#F8BC40]/30" 
-        : "hover:bg-white/60 border border-transparent hover:border-gray-200"
+        ? "bg-[#F8BC40]/10 shadow-sm border border-[#F8BC40]/30" 
+        : "hover:bg-white/80 border border-transparent hover:border-gray-200"
     )}
     onClick={onClick}
     role="button"
     tabIndex={0}
     aria-pressed={isSelected}
   >
-    <div className="flex items-start pointer-events-none flex-1 min-w-0 mr-2">
+    <div className="flex items-start pointer-events-none flex-1 min-w-0 mr-3">
       <Checkbox 
         checked={isSelected} 
-        className="flex-shrink-0 mt-1"
-        // Disable actual checkbox click since we're handling it at the parent div level
+        className="flex-shrink-0 mt-0.5"
         onClick={(e) => e.stopPropagation()}
       />
-      <span className="font-medium ml-2 text-sm leading-tight break-words" style={{ wordBreak: "break-word" }}>{name}</span>
+      <span className="font-medium ml-3 text-sm leading-tight" style={{ wordBreak: "break-word" }}>{name}</span>
     </div>
     {showPrice && price !== undefined && (
       <div className={cn(
-        "pointer-events-none font-semibold flex-shrink-0 rounded-full px-2 py-0.5 text-xs whitespace-nowrap mt-1",
-        isSelected ? "bg-[#F8BC40]/30 text-gray-800" : "bg-gray-100 text-gray-700"
+        "pointer-events-none font-medium flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap",
+        isSelected ? "bg-[#F8BC40]/20 text-[#F8BC40]" : "bg-gray-100 text-gray-600"
       )}>
         ${price.toLocaleString()}
       </div>
@@ -379,6 +699,18 @@ const VanImageVisualization = ({
   );
 };
 
+interface Chassis {
+  id: string;
+  name: string;
+  priceAdjustment: number;
+}
+
+interface Model {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export const VanBuilder: React.FC = () => {
   // Active category state - make it nullable to support closing drawers
   const [activeCategory, setActiveCategory] = useState<CategoryType | null>('chassis');
@@ -390,12 +722,11 @@ export const VanBuilder: React.FC = () => {
   const [activeView, setActiveView] = useState<ViewType>('interior');
   
   // Configuration state
-  const [configuration, setConfiguration] = useState<VanConfiguration>({
-    modelId: '',
-    chassisId: '',
-    color: '',
-    selectedOptions: [],
-  });
+  const [selectedChassis, setSelectedChassis] = useState<Chassis | null>(null);
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [totalPrice, setTotalPrice] = useState<number>(0);
 
   // Bed toggle state
   const [hasBed, setHasBed] = useState(false);
@@ -458,58 +789,54 @@ export const VanBuilder: React.FC = () => {
     { id: 'power-staycool-extender', name: 'Stay Cool Extender 600Ah', price: 6500 }
   ];
 
-  // Update the price calculation useEffect:
-  useEffect(() => {
-    // This ensures price updates are always triggered on config changes
-    const updateTotalPrice = () => {
-      // Simply calling these functions will ensure their values are re-calculated
-      getVehicleChassisPrice();
-      getBasePackagePrice();
-      getUpgradesTotal();
-      calculateTotal();
-    };
-    
-    updateTotalPrice();
-  }, [configuration]);
+  // Price calculation functions
+  const getUpgradesTotal = (): number => {
+    return selectedOptions.reduce((total, optionId) => {
+      // Check each option category
+      const option = 
+        upholsteryOptions.find(opt => opt.id === optionId) ||
+        heatingOptions.find(opt => opt.id === optionId) ||
+        exteriorOptions.find(opt => opt.id === optionId) ||
+        bathroomOptions.find(opt => opt.id === optionId) ||
+        kitchenOptions.find(opt => opt.id === optionId) ||
+        lightingOptions.find(opt => opt.id === optionId) ||
+        powerOptions.find(opt => opt.id === optionId) ||
+        cabinetOptions.find(opt => opt.id === optionId) ||
+        customizationOptions.find(opt => opt.id === optionId);
 
-  // Set initial default selection when component mounts
-  useEffect(() => {
-    // Remove the default chassis selection
-    // Previously set Sprinter 170 as default
-  }, []);
+      return total + (option?.price || 0);
+    }, 0);
+  };
 
-  // Calculate total price
   const calculateTotal = (): number => {
-    let total = 0;
-    
     // Add chassis price
-    const chassis = chassisOptions.find(c => c.id === configuration.chassisId);
-    if (chassis) {
-      total += chassis.priceAdjustment;
-    }
+    let total = selectedChassis?.priceAdjustment || 0;
     
     // Add base model price
-    const selectedPackage = modelPackages.find(m => m.id === configuration.modelId);
-    if (selectedPackage) {
-      total += selectedPackage.price;
-    }
+    total += selectedModel?.price || 0;
     
     // Add customization options
-    const options = configuration.selectedOptions.map(
-      optId => customizationOptions.find(opt => opt.id === optId) ||
-              // Try to find in our local option arrays
-              [...upholsteryOptions, ...heatingOptions].find(item => item.id === optId)
-    );
-
-    total += options.reduce((sum: number, opt) => sum + (opt?.price || 0), 0);
+    total += getUpgradesTotal();
 
     return total;
   };
 
+  // Update total price when configuration changes
+  useEffect(() => {
+    setTotalPrice(calculateTotal());
+  }, [selectedChassis, selectedModel, selectedColor, selectedOptions]);
+
+  // Set initial default selection when component mounts
+  useEffect(() => {
+    // No default selections
+  }, []);
+
   // Get vehicle chassis price (if chassis selected, otherwise 0)
   const getVehicleChassisPrice = (): number => {
-    const chassis = chassisOptions.find(c => c.id === configuration.chassisId);
-    return chassis?.priceAdjustment || 0;
+    if (selectedChassis) {
+      return selectedChassis.priceAdjustment;
+    }
+    return 0;
   };
 
   // Custom model data that maps to our vanModels
@@ -521,26 +848,15 @@ export const VanBuilder: React.FC = () => {
 
   // Get base package price (if model selected, otherwise 0)
   const getBasePackagePrice = (): number => {
-    const selectedPackage = modelPackages.find(m => m.id === configuration.modelId);
-    return selectedPackage?.price || 0;
-  };
-
-  // Get upgrades total (all selected options)
-  const getUpgradesTotal = (): number => {
-    const options = configuration.selectedOptions.map(
-      optId => customizationOptions.find(opt => opt.id === optId) ||
-              // Try to find in our local option arrays
-              [...upholsteryOptions, ...heatingOptions].find(item => item.id === optId)
-    );
-    return options.reduce((sum: number, opt) => sum + (opt?.price || 0), 0);
+    if (selectedModel) {
+      return selectedModel.price;
+    }
+    return 0;
   };
 
   // Handle chassis selection
   const handleChassisSelect = (chassisId: string) => {
-    setConfiguration(prev => ({
-      ...prev,
-      chassisId
-    }));
+    setSelectedChassis(chassisOptions.find(c => c.id === chassisId) || null);
     
     // Mark chassis as completed when selected but don't auto-advance
     if (!completedCategories.includes('chassis')) {
@@ -550,10 +866,7 @@ export const VanBuilder: React.FC = () => {
 
   // Handle model selection
   const handleModelSelect = (modelId: string) => {
-    setConfiguration(prev => ({
-      ...prev,
-      modelId
-    }));
+    setSelectedModel(modelPackages.find(m => m.id === modelId) || null);
     
     // Mark models as completed when selected but don't auto-advance
     if (!completedCategories.includes('models')) {
@@ -563,10 +876,7 @@ export const VanBuilder: React.FC = () => {
 
   // Handle color selection
   const handleColorSelect = (color: string) => {
-    setConfiguration(prev => ({
-      ...prev,
-      color
-    }));
+    setSelectedColor(color);
     
     // Mark colors as completed when selected but don't auto-advance
     if (!completedCategories.includes('colors')) {
@@ -576,12 +886,12 @@ export const VanBuilder: React.FC = () => {
 
   // Handle option selection
   const handleOptionToggle = (optionId: string) => {
-    setConfiguration(prev => {
-      const isSelected = prev.selectedOptions.includes(optionId);
+    setSelectedOptions(prev => {
+      const isSelected = prev.includes(optionId);
       
       if (isSelected) {
         // Remove the option
-        const newOptions = prev.selectedOptions.filter(id => id !== optionId);
+        const newOptions = prev.filter(id => id !== optionId);
         
         // Check if this was the last option in the current category
         const categoryOptions = getCategoryOptions(activeCategory as CategoryType);
@@ -596,20 +906,14 @@ export const VanBuilder: React.FC = () => {
           );
         }
         
-        return {
-          ...prev,
-          selectedOptions: newOptions
-        };
+        return newOptions;
       } else {
         // Add the option and mark category as completed
-        if (!completedCategories.includes(activeCategory as CategoryType)) {
+    if (!completedCategories.includes(activeCategory as CategoryType)) {
           setCompletedCategories(prev => Array.from(new Set([...prev, activeCategory as CategoryType])));
         }
         
-        return {
-          ...prev,
-          selectedOptions: [...prev.selectedOptions, optionId]
-        };
+        return [...prev, optionId];
       }
     });
   };
@@ -641,22 +945,15 @@ export const VanBuilder: React.FC = () => {
   };
 
   // Email modal state
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  
-  // Handle email submission
-  const handleEmailSubmit = (email: string) => {
-    // Process the order with the email
-    alert(`Thank you! Your custom van configuration has been sent to ${email}.\nTotal: $${calculateTotal().toLocaleString()}`);
-    setEmailModalOpen(false);
-  };
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   // Render category content functions for each category
   const renderChassisOptions = () => (
-    <div className="py-2 space-y-1 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3">
+    <div className="space-y-1 px-3">
       {chassisOptions.map(chassis => (
         <OptionItem 
           key={chassis.id} 
-          isSelected={configuration.chassisId === chassis.id}
+          isSelected={selectedChassis?.id === chassis.id}
           name={chassis.name}
           price={chassis.priceAdjustment}
           onClick={(e) => {
@@ -669,11 +966,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderModelOptions = () => (
-    <div className="py-2 space-y-1 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3">
+    <div className="space-y-1 px-3">
       {modelPackages.map(model => (
         <OptionItem 
               key={model.id}
-          isSelected={configuration.modelId === model.id}
+          isSelected={selectedModel?.id === model.id}
           name={model.name}
           price={model.price}
           onClick={(e) => {
@@ -686,11 +983,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderColorOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {colorOptions.map(color => (
         <OptionItem 
           key={color.id} 
-          isSelected={configuration.color === color.id}
+          isSelected={selectedColor === color.id}
           name={color.name}
           onClick={(e) => {
             e.stopPropagation();
@@ -702,30 +999,30 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderElectricalOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {customizationOptions
         .filter(opt => opt.category === 'Electrical')
         .map(option => (
           <OptionItem 
             key={option.id} 
-            isSelected={configuration.selectedOptions.includes(option.id)}
-            name={option.name}
-            price={option.price}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOptionToggle(option.id);
-            }}
-          />
-        ))}
+            isSelected={selectedOptions.includes(option.id)}
+          name={option.name}
+          price={option.price}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOptionToggle(option.id);
+          }}
+        />
+      ))}
     </div>
   );
 
   const renderUpholsteryOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {upholsteryOptions.map(option => (
         <OptionItem 
           key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -738,11 +1035,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderHeatingOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {heatingOptions.map(option => (
         <OptionItem 
           key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -755,11 +1052,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderExteriorOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {exteriorOptions.map(option => (
         <OptionItem 
           key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -772,11 +1069,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderBathroomOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {bathroomOptions.map(option => (
         <OptionItem 
           key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -789,11 +1086,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderKitchenOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {kitchenOptions.map(option => (
         <OptionItem 
           key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -806,11 +1103,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderLightingOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {lightingOptions.map(option => (
         <OptionItem 
           key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -823,11 +1120,11 @@ export const VanBuilder: React.FC = () => {
   );
 
   const renderPowerOptions = () => (
-    <div className="py-2 px-3 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-1 relative z-0">
+    <div className="space-y-1 px-3">
       {powerOptions.map(option => (
         <OptionItem 
           key={option.id} 
-          isSelected={configuration.selectedOptions.includes(option.id)}
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -842,7 +1139,7 @@ export const VanBuilder: React.FC = () => {
   // Cabinet selection handler
   const handleCabinetSelect = (cabinetId: string) => {
     // Remove any previous cabinet selection from options
-    const filteredOptions = configuration.selectedOptions.filter(
+    const filteredOptions = selectedOptions.filter(
       opt => !opt.includes('cabinet')
     );
     
@@ -850,10 +1147,7 @@ export const VanBuilder: React.FC = () => {
     setSelectedCabinet(cabinetId);
     console.log("Selected cabinet:", cabinetId); // Debug log
     
-    setConfiguration({
-      ...configuration,
-      selectedOptions: [...filteredOptions, cabinetId]
-    });
+    setSelectedOptions([...filteredOptions, cabinetId]);
     
     // Mark the category as completed
     if (!completedCategories.includes('cabinets')) {
@@ -863,18 +1157,16 @@ export const VanBuilder: React.FC = () => {
 
   // Render cabinet options
   const renderCabinetsOptions = () => (
-    <div className="p-2 mx-2 bg-white/70 rounded-lg mt-1 mb-3 space-y-2 relative z-0">
-      <div className="space-y-1">
-        {cabinetOptions.map((cabinet) => (
-          <OptionItem 
-            key={cabinet.id}
-            isSelected={selectedCabinet === cabinet.id}
-            name={cabinet.name}
-            price={cabinet.price}
-            onClick={() => handleCabinetSelect(cabinet.id)}
-          />
-        ))}
-      </div>
+    <div className="space-y-1 px-3">
+      {cabinetOptions.map((cabinet) => (
+        <OptionItem 
+          key={cabinet.id}
+          isSelected={selectedCabinet === cabinet.id}
+          name={cabinet.name}
+          price={cabinet.price}
+          onClick={() => handleCabinetSelect(cabinet.id)}
+        />
+      ))}
     </div>
   );
 
@@ -909,7 +1201,7 @@ export const VanBuilder: React.FC = () => {
     }, 200);
     
     return () => clearTimeout(timer);
-  }, [activeView, configuration.chassisId, configuration.color]);
+  }, [activeView, selectedChassis?.id, selectedColor]);
 
   // Updated calculation function for progress percentage
   const calculateProgressPercentage = (): number => {
@@ -926,25 +1218,25 @@ export const VanBuilder: React.FC = () => {
     <div className="flex flex-col min-h-screen h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans'] fixed inset-0 overflow-hidden">
       <GlobalStyles />
       
-      {/* Main content section with fixed height and added padding */}
-      <div className="flex flex-1 overflow-hidden p-6 pt-10 pb-10 gap-6">
+      {/* Main content section with improved spacing and layout */}
+      <div className="flex flex-1 overflow-hidden p-8 gap-8">
         {/* Left sidebar - Categories */}
-        <div className="w-[340px] flex flex-col overflow-hidden rounded-xl shadow-lg bg-white/90 backdrop-blur-sm self-start" style={{ maxHeight: "90vh" }}>
+        <div className="w-[360px] flex flex-col overflow-hidden rounded-2xl shadow-lg bg-white/95 backdrop-blur-sm self-start border border-gray-100/50" style={{ maxHeight: "75vh" }}>
           {/* Title with improved styling */}
-          <div className="py-3 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100 rounded-t-xl">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="py-5 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2.5 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
               </svg>
               Customize Your Van
             </h2>
-            <p className="text-gray-600 text-xs mt-0.5">Select options to build your dream van</p>
+            <p className="text-gray-500 text-sm mt-1.5 ml-8.5">Select options to build your dream van</p>
           </div>
           
-          {/* Categories with scrolling */}
-          <div className="overflow-y-auto custom-scrollbar flex-1 pt-2 pb-3 rounded-b-xl">
+          {/* Categories with improved scrolling and spacing */}
+          <div className="overflow-y-auto custom-scrollbar flex-1 py-4 space-y-1.5">
             {CATEGORY_ORDER.map((category) => (
-              <div key={category} className="mb-1">
+              <div key={category}>
                 <Category 
                   title={category === 'chassis' ? 'Vehicle Chassis' : 
                          category === 'electrical' ? 'Electrical & Connectivity' :
@@ -953,25 +1245,24 @@ export const VanBuilder: React.FC = () => {
                          category === 'bathroom' ? 'Bathroom Options' :
                          category === 'kitchen' ? 'Kitchen Features' :
                          category === 'lighting' ? 'Lighting Systems' :
-                         category === 'power' ? 'Power' :
-                         category === 'cabinets' ? 'Cabinets' :
+                         category === 'power' ? 'Power Systems' :
+                         category === 'cabinets' ? 'Cabinet Options' :
                          category.charAt(0).toUpperCase() + category.slice(1)}
                   isActive={activeCategory === category}
                   isCompleted={completedCategories.includes(category)}
                   onClick={() => {
                     if (activeCategory === category) {
-                      // If clicking on the active category, close it
                       setActiveCategory(null);
                     } else {
-                      // Otherwise, open the clicked category
                       setActiveCategory(category);
                     }
                   }}
                 />
                 
-                {/* Options drawer with animation */}
+                {/* Options drawer with improved animation and spacing */}
                 {activeCategory === category && (
-                  <div className="transition-all duration-300 ease-in-out overflow-hidden bg-white/30">
+                  <div className="transition-all duration-300 ease-in-out overflow-hidden">
+                    <div className="pt-2 pb-3">
                     {/* Render the appropriate options based on category */}
                     {category === 'chassis' && renderChassisOptions()}
                     {category === 'models' && renderModelOptions()}
@@ -983,8 +1274,9 @@ export const VanBuilder: React.FC = () => {
                     {category === 'bathroom' && renderBathroomOptions()}
                     {category === 'kitchen' && renderKitchenOptions()}
                     {category === 'lighting' && renderLightingOptions()}
-                    {category === 'power' && renderPowerOptions()}
-                    {category === 'cabinets' && renderCabinetsOptions()}
+                      {category === 'power' && renderPowerOptions()}
+                      {category === 'cabinets' && renderCabinetsOptions()}
+                    </div>
                   </div>
                 )}
               </div>
@@ -993,28 +1285,17 @@ export const VanBuilder: React.FC = () => {
         </div>
 
         {/* Center - Van Visualization with improved styling */}
-        <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-xl mx-4">
-          {/* Background pattern */}
-          <div className="absolute inset-0 bg-opacity-5 pointer-events-none">
-            <div className="absolute inset-0 opacity-5">
-              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="gray" strokeWidth="0.5" />
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-              </svg>
-            </div>
-          </div>
+        <div className="flex-1 flex items-center justify-center relative overflow-hidden rounded-2xl mx-6">
+          {/* Subtle border and backdrop effect */}
+          <div className="absolute inset-0 border border-white/30 rounded-2xl backdrop-blur-[1px]"></div>
           
-          {/* View controls - Menubar for view selection - now centered */}
-          <div className="absolute top-4 left-0 right-0 mx-auto z-10 flex flex-col items-center">
-            <Menubar className="bg-white/90 backdrop-blur-sm shadow-md mb-2">
+          {/* View controls with improved styling */}
+          <div className="absolute top-6 left-0 right-0 mx-auto z-10 flex flex-col items-center gap-4">
+            <Menubar className="bg-white/95 backdrop-blur-sm shadow-md border border-gray-100/50 p-1 rounded-lg">
               <MenubarItem 
                 onClick={() => setActiveView('interior')} 
                 className={cn(
-                  "transition-colors",
+                  "transition-colors px-6 rounded-md",
                   activeView === 'interior' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
                 )}
               >
@@ -1023,7 +1304,7 @@ export const VanBuilder: React.FC = () => {
               <MenubarItem 
                 onClick={() => setActiveView('exterior')} 
                 className={cn(
-                  "transition-colors",
+                  "transition-colors px-6 rounded-md",
                   activeView === 'exterior' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
                 )}
               >
@@ -1032,7 +1313,7 @@ export const VanBuilder: React.FC = () => {
               <MenubarItem 
                 onClick={() => setActiveView('rear')} 
                 className={cn(
-                  "transition-colors",
+                  "transition-colors px-6 rounded-md",
                   activeView === 'rear' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
                 )}
               >
@@ -1041,7 +1322,7 @@ export const VanBuilder: React.FC = () => {
               <MenubarItem 
                 onClick={() => setActiveView('reartop')} 
                       className={cn(
-                  "transition-colors",
+                  "transition-colors px-6 rounded-md",
                   activeView === 'reartop' ? 'bg-[#F8BC40] text-white hover:bg-[#E6AB30] hover:text-white' : ''
                 )}
               >
@@ -1049,10 +1330,10 @@ export const VanBuilder: React.FC = () => {
               </MenubarItem>
             </Menubar>
             
-            {/* Bed toggle switch */}
+            {/* Bed toggle with improved styling */}
             {activeView === 'interior' && selectedCabinet && (
-              <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm shadow-md p-2 rounded-lg">
-                <span className="text-sm font-medium">Bed</span>
+              <div className="flex items-center gap-3 bg-white/95 backdrop-blur-sm shadow-md p-3 rounded-lg border border-gray-100/50">
+                <span className="text-sm font-medium text-gray-700">Toggle Bed</span>
                 <Switch 
                   checked={hasBed} 
                   onCheckedChange={setHasBed} 
@@ -1060,102 +1341,107 @@ export const VanBuilder: React.FC = () => {
                 />
               </div>
             )}
-          </div>
+                    </div>
 
-          <div className="absolute inset-0 flex items-center justify-center pt-14 pb-20 scale-125">
-            {/* Enhanced Van Visualization */}
+          {/* Van visualization with improved scaling and positioning */}
+          <div className="absolute inset-0 flex items-center justify-center pt-24 pb-24 scale-125">
             <VanImageVisualization 
               imagePath={getVanImagePath()}
               view={activeView}
               opacity={imageOpacity}
             />
-          </div>
+                </div>
           
-          {/* Updated configuration progress at the bottom - now centered */}
-          <div className="absolute bottom-6 left-0 right-0 mx-auto bg-white/90 backdrop-blur-sm shadow-lg p-3 rounded-xl w-[340px] border border-gray-100 z-10">
-            <div className="flex items-center justify-between mb-1.5">
+          {/* Configuration progress with improved styling */}
+          <div className="absolute bottom-6 left-0 right-0 mx-auto bg-white/95 backdrop-blur-sm shadow-lg p-4 rounded-xl w-[360px] border border-gray-100/50">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="font-semibold text-sm">Configuration Progress</span>
+                <span className="font-semibold text-gray-800">Configuration Progress</span>
               </div>
-              <span className="font-medium text-sm text-green-600">
+              <span className="font-medium text-green-600">
                 {calculateProgressPercentage()}%
               </span>
             </div>
             
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-100 rounded-full h-2.5">
               <div 
-                className="bg-green-600 h-2 rounded-full transition-all duration-500" 
+                className="bg-green-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
                 style={{ width: `${calculateProgressPercentage()}%` }}
               ></div>
             </div>
           </div>
         </div>
 
-        {/* Right sidebar - Price summary - vertically centered */}
-        <div className="w-80 flex flex-col overflow-hidden rounded-xl shadow-lg bg-white/90 backdrop-blur-sm self-center" style={{ maxHeight: "80vh" }}>
-          <div className="py-3 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100 rounded-t-xl">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* Right sidebar - Price summary with improved styling */}
+        <div className="w-[360px] flex flex-col overflow-hidden rounded-2xl shadow-lg bg-white/95 backdrop-blur-sm self-center border border-gray-100/50">
+          <div className="py-5 px-6 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2.5 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Price Breakdown
             </h2>
           </div>
 
-          {/* Scrollable content area for cards */}
-          <div className="overflow-y-auto custom-scrollbar flex-1 px-4 pb-4 pt-3">
-            {/* Enhanced Price Summary Box */}
-            <div className="slide-in space-y-4">
-              <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm h-16">
+          {/* Price cards with improved spacing and styling */}
+          <div className="p-5 space-y-4">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 h-[72px]">
                 <span className="text-gray-700 font-medium">Chassis:</span>
                 <div className="flex flex-col items-end">
-                  <span className="font-medium text-sm">
-                    {chassisOptions.find(c => c.id === configuration.chassisId)?.name || <span className="text-gray-500 text-sm">Not selected</span>}
+                  <span className="font-medium text-sm text-gray-600">
+                    {selectedChassis?.name || 
+                      <span className="text-gray-400">Not selected</span>}
                   </span>
-                  <span className="font-semibold text-[#F8BC40] text-base">
+                  <span className="font-semibold text-[#F8BC40] text-lg mt-0.5">
                     ${getVehicleChassisPrice().toLocaleString()}
                   </span>
                 </div>
               </div>
               
-              <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm h-16">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 h-[72px]">
                 <span className="text-gray-700 font-medium">Base Package:</span>
                 <div className="flex flex-col items-end">
-                  <span className="font-medium text-sm">
-                    {modelPackages.find(m => m.id === configuration.modelId)?.name || <span className="text-gray-500 text-sm">Not selected</span>}
+                  <span className="font-medium text-sm text-gray-600">
+                    {selectedModel?.name || 
+                      <span className="text-gray-400">Not selected</span>}
                   </span>
-                  <span className="font-semibold text-[#F8BC40] text-base">
+                  <span className="font-semibold text-[#F8BC40] text-lg mt-0.5">
                     ${getBasePackagePrice().toLocaleString()}
                   </span>
                 </div>
               </div>
               
-              <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm h-16">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 h-[72px]">
                 <span className="text-gray-700 font-medium">Upgrades:</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-sm text-gray-600">{configuration.selectedOptions.length} items</span>
-                  <span className="font-semibold text-[#F8BC40] text-base">${getUpgradesTotal().toLocaleString()}</span>
+                  <span className="text-sm text-gray-600">{selectedOptions.length} items selected</span>
+                  <span className="font-semibold text-[#F8BC40] text-lg mt-0.5">
+                    ${getUpgradesTotal().toLocaleString()}
+                  </span>
                 </div>
               </div>
               
-              <div className="p-4 bg-[#F8BC40]/10 rounded-xl h-16">
+              <div className="p-5 bg-[#F8BC40]/10 rounded-xl border border-[#F8BC40]/20">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-gray-800 text-lg">Total Price:</span>
-                  <span className="font-bold text-xl text-[#F8BC40]">${calculateTotal().toLocaleString()}</span>
+                  <span className="font-bold text-gray-800 text-xl">Total:</span>
+                  <span className="font-bold text-2xl text-[#F8BC40]">
+                    ${calculateTotal().toLocaleString()}
+                  </span>
                 </div>
               </div>
               
-              {/* Action buttons moved inside the price breakdown component */}
+              {/* Action button with improved styling */}
               <div className="mt-6">
             <Button
-                  className="w-full bg-white hover:bg-green-600 hover:text-white text-gray-800 font-semibold py-3 border border-gray-300 transition-colors duration-200 rounded-lg shadow-sm"
-                  onClick={() => setEmailModalOpen(true)}
+                  className="w-full bg-[#F8BC40] hover:bg-[#E6AB30] text-white font-semibold py-6 transition-colors duration-200 rounded-xl shadow-md flex items-center justify-center gap-2 text-base"
+                  onClick={() => setIsEmailModalOpen(true)}
             >
-                  <span className="mr-2">Let's Build!</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <span>Let's Build Your Van!</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
             </Button>
@@ -1165,11 +1451,20 @@ export const VanBuilder: React.FC = () => {
         </div>
       </div>
       
-      {/* Enhanced Email Modal */}
+      {/* Updated EmailModal with proper props */}
       <EmailModal 
-        isOpen={emailModalOpen}
-        onClose={() => setEmailModalOpen(false)}
-        onSubmit={handleEmailSubmit}
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        selectedChassis={selectedChassis}
+        selectedModel={selectedModel}
+        selectedColor={selectedColor}
+        selectedOptions={selectedOptions}
+        totalPrice={totalPrice}
+        getUpgradesTotal={getUpgradesTotal}
+        calculateTotal={calculateTotal}
+        upholsteryOptions={upholsteryOptions}
+        heatingOptions={heatingOptions}
+        customizationOptions={customizationOptions}
       />
     </div>
   );
