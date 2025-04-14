@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { chassisOptions, customizationOptions, colorOptions, cabinetOptions } from '../data/vanData';
 import { cn } from '../lib/utils';
 import type { VanConfiguration } from '../types';
 import testImage from '../assets/test.png';
 import '../styles/fonts.css';
+
+// Import mobile components
+import MobileHeader from './layout/MobileHeader';
+import MobileNavigation from './layout/MobileNavigation';
 
 // Import cabinet images
 import wcImage from '../assets/wc.png';
@@ -438,7 +442,7 @@ ${comments ? `Additional Notes:\n${comments}` : ''}`
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4 2c.3.2.5.4.7.4.2 0 .4-.1.6-.4l4-2a1 1 0 011.21-.502L21 7.01a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </div>
                 <input
@@ -486,7 +490,7 @@ ${comments ? `Additional Notes:\n${comments}` : ''}`
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l-7 7 7 7l-4.5-6.3a.5.5 0 01.8-.4l4 2c.3.2.5.4.7.4.2 0 .4-.1.6-.4l4-2a.5.5 0 01.8.4z" />
                   </svg>
                 </div>
                 <input
@@ -794,6 +798,25 @@ const wallColorOptions = [
 ];
 
 export const VanBuilder: React.FC = () => {
+  // Responsive state - detect if we're on mobile
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  
+  // Setup responsive detection
+  const handleResize = useCallback(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+  
+  useEffect(() => {
+    // Set initial value
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, [handleResize]);
+  
   // Active category state - make it nullable to support closing drawers
   const [activeCategory, setActiveCategory] = useState<CategoryType | null>('chassis');
   
@@ -950,9 +973,19 @@ export const VanBuilder: React.FC = () => {
 
   // Handle chassis selection
   const handleChassisSelect = (chassisId: string) => {
-    setSelectedChassis(chassisOptions.find(c => c.id === chassisId) || null);
-    
-    // Mark chassis as completed when selected but don't auto-advance
+    const selected = chassisOptions.find(c => c.id === chassisId);
+    setSelectedChassis(selected || null);
+    // setActiveCategory('models'); // Comment out to prevent auto-advancing
+
+    // Update selectedOptions: remove other chassis, add this one
+    setSelectedOptions(prev => [
+      // Filter out any other chassis options
+      ...prev.filter(id => !chassisOptions.some(ch => ch.id === id)),
+      // Add the newly selected chassis ID
+      chassisId
+    ]);
+
+    // Mark chassis as completed
     if (!completedCategories.includes('chassis')) {
       setCompletedCategories(prev => Array.from(new Set([...prev, 'chassis'])));
     }
@@ -960,24 +993,30 @@ export const VanBuilder: React.FC = () => {
 
   // Handle model selection
   const handleModelSelect = (modelId: string) => {
-    setSelectedModel(modelPackages.find(m => m.id === modelId) || null);
-    
-    // Set default configuration for Sansaba package
-    if (modelId === 'sansaba') {
-      // Set wall color to finished
-      setSelectedWallColor('wall-finished');
-      
-      // Set cabinets to white
-      setSelectedCabinet('cabinet-white');
-      
-      // Set counter to maple
-      setSelectedCounter('kitchen-countertop-maple');
-      
-      // Set bed to present
-      setHasBed(true);
-      
+    const selected = modelPackages.find(m => m.id === modelId);
+    setSelectedModel(selected || null);
+    // setActiveCategory('wallcolor'); // Comment out to prevent auto-advancing
+
+    // Update selectedOptions: remove other models, add this one
+    setSelectedOptions(prev => [
+      // Filter out any other model options
+      ...prev.filter(id => !modelPackages.some(m => m.id === id)),
+       // Add the newly selected model ID
+      modelId
+    ]);
+
+    // If a model with default options is selected, apply them
+    if (modelId === 'sansaba' || modelId === 'pedernales' || modelId === 'riogrande') {
       // Update selected options to include all defaults
-      setSelectedOptions([
+      setSelectedOptions(prev => [
+        // Keep existing selections not related to these defaults
+        ...prev.filter(id => 
+          !wallColorOptions.some(w => w.id === id) && 
+          !cabinetOptions.some(c => c.id === id) &&
+          !kitchenOptions.some(k => k.id === id) &&
+          !modelPackages.some(m => m.id === id) // Ensure model isn't duplicated
+        ),
+        modelId, // Add the selected model back
         'wall-finished',
         'cabinet-white',
         'kitchen-countertop-maple'
@@ -992,17 +1031,20 @@ export const VanBuilder: React.FC = () => {
         'kitchen'
       ])));
     }
-    
-    // Mark models as completed when selected
-    if (!completedCategories.includes('models')) {
-      setCompletedCategories(prev => Array.from(new Set([...prev, 'models'])));
-    }
   };
 
   // Handle color selection
-  const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
+  const handleColorSelect = (colorId: string) => {
+    setSelectedColor(colorId);
     
+    // Update selectedOptions: remove other colors, add this one
+    setSelectedOptions(prev => [
+      // Filter out any other color options
+      ...prev.filter(id => !colorOptions.some(c => c.id === id)),
+      // Add the newly selected color ID
+      colorId
+    ]);
+
     // Mark colors as completed when selected but don't auto-advance
     if (!completedCategories.includes('colors')) {
       setCompletedCategories(prev => Array.from(new Set([...prev, 'colors'])));
@@ -1042,6 +1084,8 @@ export const VanBuilder: React.FC = () => {
       }
     });
   };
+  
+  // Helper function to get options for a specific category
 
   // Helper function to get options for a specific category
   const getCategoryOptions = (category: CategoryType) => {
@@ -1070,6 +1114,11 @@ export const VanBuilder: React.FC = () => {
         return [];
     }
   };
+
+  // Update total price when configuration changes
+  useEffect(() => {
+    setTotalPrice(calculateTotal());
+  }, [selectedChassis, selectedModel, selectedColor, selectedOptions]);
 
   // Email modal state
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -1435,12 +1484,162 @@ export const VanBuilder: React.FC = () => {
     }
   };
 
+  // Prepare category data for mobile navigation
+  const categoryData = CATEGORY_ORDER.map((categoryType) => {
+    let options: Array<{id: string; name: string; price: number; category?: string;}> = [];
+    
+    // Get the appropriate options based on category type
+    switch(categoryType) {
+      case 'chassis':
+        options = chassisOptions.map(c => ({id: c.id, name: c.name, price: c.priceAdjustment}));
+        break;
+      case 'models':
+        options = modelPackages.map(m => ({id: m.id, name: m.name, price: m.price}));
+        break;
+      case 'wallcolor':
+        options = wallColorOptions;
+        break;
+      case 'colors':
+        options = colorOptions.map(c => ({id: c.id, name: c.name, price: 0}));
+        break;
+      case 'cabinets':
+        options = cabinetOptions;
+        break;
+      case 'upholstery':
+        options = upholsteryOptions;
+        break;
+      case 'heating':
+        options = heatingOptions;
+        break;
+      case 'exterior':
+        options = exteriorOptions;
+        break;
+      case 'bathroom':
+        options = bathroomOptions;
+        break;
+      case 'kitchen':
+        options = kitchenOptions;
+        break;
+      case 'lighting':
+        options = lightingOptions;
+        break;
+      case 'power':
+        options = powerOptions;
+        break;
+      case 'electrical':
+        options = customizationOptions.filter(opt => opt.category === 'Electrical');
+        break;
+      default:
+        options = [];
+    }
+    
+    return {
+      type: categoryType,
+      title: categoryType === 'chassis' ? 'Vehicle Chassis' : 
+             categoryType === 'electrical' ? 'Electrical & Connectivity' :
+             categoryType === 'heating' ? 'Heating & Cooling' :
+             categoryType === 'exterior' ? 'Exterior Features' :
+             categoryType === 'bathroom' ? 'Bathroom Options' :
+             categoryType === 'kitchen' ? 'Kitchen Features' :
+             categoryType === 'lighting' ? 'Lighting Systems' :
+             categoryType === 'power' ? 'Power Systems' :
+             categoryType === 'cabinets' ? 'Cabinet Options' :
+             categoryType === 'wallcolor' ? 'Wall Color' :
+             categoryType.charAt(0).toUpperCase() + categoryType.slice(1),
+      isCompleted: completedCategories.includes(categoryType),
+      isLocked: isCategoryLocked(categoryType),
+      options: options
+    };
+  });
+
+  // Calculate vehicle, package, and upgrades prices for mobile header
+  const vehiclePrice = getVehicleChassisPrice();
+  const packagePrice = getBasePackagePrice();
+  const upgradesTotal = getUpgradesTotal();
+
+  // Specific handler for mobile clicks to route to correct function
+  const handleMobileOptionClick = (optionId: string, categoryType: CategoryType) => {
+    switch (categoryType) {
+      case 'chassis':
+        handleChassisSelect(optionId);
+        break;
+      case 'models':
+        handleModelSelect(optionId);
+        break;
+      case 'colors':
+        handleColorSelect(optionId);
+        break;
+      case 'wallcolor': // Assuming wallcolor uses the general toggle
+      case 'cabinets':  // Assuming cabinets uses the general toggle
+      case 'upholstery':
+      case 'electrical':
+      case 'heating':
+      case 'exterior':
+      case 'bathroom':
+      case 'kitchen':
+      case 'lighting':
+      case 'power':
+      default:
+        // Ensure the active category is set correctly before toggling
+        // This might be needed if the click doesn't automatically set it
+        if (activeCategory !== categoryType) {
+            setActiveCategory(categoryType);
+        }
+        // Use a slight delay to ensure state updates before toggling
+        // This can sometimes help with race conditions in state updates
+        setTimeout(() => handleOptionToggle(optionId), 0); 
+        break;
+    }
+  };
+
+  const handleHasOwnVanToggle = () => {
+    setHasVan(!hasVan);
+  };
+
   return (
     <div className="flex flex-col min-h-screen h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans'] fixed inset-0 overflow-hidden">
       <GlobalStyles />
       
-      {/* Main content section with improved spacing and layout */}
-      <div className="flex flex-1 overflow-hidden p-8 gap-8">
+      {/* Mobile view */}
+      {isMobile && (
+        <div className="flex flex-col h-full overflow-auto bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA]">
+          {/* Mobile header with price boxes */}
+          <MobileHeader 
+            vehiclePrice={vehiclePrice}
+            packagePrice={packagePrice}
+            upgradesTotal={upgradesTotal}
+            totalPrice={totalPrice}
+            progress={calculateProgressPercentage()}
+            hasOwnVan={hasVan}
+            onHasOwnVanToggle={handleHasOwnVanToggle}
+          />
+          
+          {/* Mobile van visualization */}
+          <div className="mobile-van-visualization">
+            <VanImageVisualization
+              view="interior"
+              selectedWallColor={selectedWallColor}
+              selectedCabinet={selectedCabinet}
+              selectedCounter={selectedCounter}
+              hasBed={hasBed}
+              hasSeats={hasSeats}
+            />
+          </div>
+          
+          {/* Mobile configuration options */}
+          <MobileNavigation 
+            categories={categoryData}
+            selectedOptions={selectedOptions}
+            onOptionSelect={handleMobileOptionClick} 
+            activeCategory={activeCategory} 
+            setActiveCategory={setActiveCategory} 
+          />
+        </div>
+      )}
+      
+      {/* Desktop view */}
+      {!isMobile && (
+        <div className="flex flex-1 overflow-hidden p-8 gap-8">
         {/* Left sidebar - Categories */}
         <div className="w-[360px] flex flex-col overflow-hidden rounded-2xl shadow-lg bg-white/95 backdrop-blur-sm self-center border border-gray-100/50" style={{ height: "580px" }}>
           {/* Title with improved styling */}
@@ -1543,7 +1742,7 @@ export const VanBuilder: React.FC = () => {
             {selectedCabinet && (
               <div className="flex items-center gap-6 bg-white/95 backdrop-blur-sm shadow-md p-3 rounded-lg border border-gray-100/50">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">Toggle Bed</span>
+                  <span className="text-sm font-medium text-gray-700">Bed</span>
                   <Switch 
                     checked={hasBed} 
                     onCheckedChange={setHasBed} 
@@ -1552,7 +1751,7 @@ export const VanBuilder: React.FC = () => {
                 </div>
                 <div className="w-px h-6 bg-gray-200"></div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">Toggle Seats</span>
+                  <span className="text-sm font-medium text-gray-700">Seats</span>
                   <Switch 
                     checked={hasSeats} 
                     onCheckedChange={setHasSeats} 
@@ -1594,7 +1793,7 @@ export const VanBuilder: React.FC = () => {
               <Switch 
                 id="van-ownership" 
                 checked={hasVan}
-                onCheckedChange={setHasVan}
+                onCheckedChange={handleHasOwnVanToggle}
               />
             </div>
           </div>
@@ -1679,6 +1878,7 @@ export const VanBuilder: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
       
       {/* Updated EmailModal with proper props */}
       <EmailModal 

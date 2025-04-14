@@ -1,5 +1,6 @@
 import React from 'react';
 import { VanBuilder } from './components/VanBuilder';
+import './styles/mobile.css';
 
 function App() {
   return (
