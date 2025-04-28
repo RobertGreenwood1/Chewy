@@ -1,0 +1,18 @@
+# Task: Integrate New Van Image Layers
+
+## Description
+Move new PNG layer sets into the project structure, update VanBuilder component to use them, ensure correct layering (z-index) and labeling, and remove old placeholder images.
+
+## Details
+- Create `public/assets/van-layers/`.
+- Move the five layer directories (`144 Pedernales Layers`, `144 Rio Grande Layers`, `144 San Saba Layers`, `170 Pedernales PS Layers`, `170 Rio Grande PS Layers`) into `public/assets/van-layers/`. Consider renaming them for clarity (e.g., `144-pedernales`, `170-rio-grande`).
+- Update `src/components/VanBuilder.tsx` to reference images from `/assets/van-layers/...` based on selected options (van model, features).
+- Adjust `z-index` styles within `VanBuilder.tsx` or associated CSS to ensure proper visual stacking of layers.
+- Map image selections to correct user-facing labels in the UI.
+- Identify and remove unused test/placeholder images (likely in `public/` or `src/assets/`) and related code references in `VanBuilder.tsx`.
+
+## Test Strategy
+Manually verify in the app by selecting different van models (144, 170) and various options. Confirm that the correct, layered images from the new asset folders are displayed and that old images/placeholders are no longer present or referenced.
+
+## Priority
+High

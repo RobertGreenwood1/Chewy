@@ -1,9 +1,19 @@
 export interface VanModel {
-  id: string;
+  id: 'pedernales' | 'rio-grande' | 'san-saba'; // Enforce specific layout IDs
   name: string;
   basePrice: number;
+  price: number; // Updated: Assuming this is calculated or might be same as basePrice initially
   description: string;
   imageUrl: string;
+  items: CustomizationOption[];
+  chassisSizes: string[]; // e.g., ['sprinter144', 'sprinter170']
+  defaultSelections: {
+    wallColorId: string;
+    cabinetId: string;
+    counterId: string;
+    hasBed: boolean;
+    hasSeats: boolean;
+  };
 }
 
 export interface ChassisOption {
@@ -23,8 +33,50 @@ export interface CustomizationOption {
 }
 
 export interface VanConfiguration {
-  modelId: string;
-  chassisId: string;
-  color: string;
-  selectedOptions: string[];
+  [key: string]: string | string[] | undefined;
 }
+
+export interface ColorOption {
+  id: string;
+  name: string;
+  hex: string;
+}
+
+export interface CabinetOption {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export type CategoryType = 
+  'chassis'
+  | 'models'
+  | 'wallcolor'
+  | 'cabinets'
+  | 'colors'
+  | 'upholstery'
+  | 'electrical'
+  | 'heating'
+  | 'exterior'
+  | 'bathroom'
+  | 'kitchen'
+  | 'lighting'
+  | 'power';
+
+export const CATEGORY_ORDER: CategoryType[] = [
+  'chassis',
+  'models',
+  'wallcolor',
+  'cabinets',
+  'colors',
+  'upholstery',
+  'electrical',
+  'heating',
+  'exterior',
+  'bathroom',
+  'kitchen',
+  'lighting',
+  'power'
+];
+
+// Interface for individual customization options
