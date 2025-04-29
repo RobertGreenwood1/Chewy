@@ -53,8 +53,6 @@ export type CategoryType =
   | 'models'
   | 'wallcolor'
   | 'cabinets'
-  | 'colors'
-  | 'upholstery'
   | 'electrical'
   | 'heating'
   | 'exterior'
@@ -68,8 +66,6 @@ export const CATEGORY_ORDER: CategoryType[] = [
   'models',
   'wallcolor',
   'cabinets',
-  'colors',
-  'upholstery',
   'electrical',
   'heating',
   'exterior',

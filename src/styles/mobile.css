@@ -1,7 +1,7 @@
 /* Mobile styles for the van builder application */
 
 /* Mobile breakpoint styles */
-@media (max-width: 768px) {
+@media (max-width: 1130px) {
   /* Hide desktop-only elements */
   .desktop-only {
     display: none !important;

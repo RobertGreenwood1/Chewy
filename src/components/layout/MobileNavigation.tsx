@@ -3,10 +3,8 @@ import { cn } from '../../lib/utils';
 
 type CategoryType = 
   | 'chassis' 
-  | 'colors'
   | 'models'
   | 'wallcolor'
-  | 'upholstery' 
   | 'electrical' 
   | 'heating'
   | 'exterior' 

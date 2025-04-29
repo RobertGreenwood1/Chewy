@@ -1,5 +1,4 @@
 import React from 'react';
-import { Truck } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { VanConfiguration } from '../types';
 
@@ -214,7 +213,7 @@ export const VanVisualization: React.FC<VanVisualizationProps> = ({
         />
 
         {/* Draw customization options */}
-        {config.selectedOptions.includes('solar') && (
+        {(config?.selectedOptions ?? []).includes('solar') && (
           <rect
             x="250"
             y="140"
@@ -334,7 +333,7 @@ export const VanVisualization: React.FC<VanVisualizationProps> = ({
       />
       
       {/* Draw customization options */}
-      {config.selectedOptions.includes('kitchen') && (
+      {(config?.selectedOptions ?? []).includes('kitchen') && (
         <g>
           <rect
             x="500"
@@ -363,7 +362,7 @@ export const VanVisualization: React.FC<VanVisualizationProps> = ({
         </g>
       )}
       
-      {config.selectedOptions.includes('bathroom') && (
+      {(config?.selectedOptions ?? []).includes('bathroom') && (
         <rect
           x="350"
           y="200"
@@ -530,7 +529,7 @@ export const VanVisualization: React.FC<VanVisualizationProps> = ({
       />
       
       {/* Roof elements */}
-      {config.selectedOptions.includes('solar') && (
+      {(config?.selectedOptions ?? []).includes('solar') && (
         <rect
           x="250"
           y="170"
