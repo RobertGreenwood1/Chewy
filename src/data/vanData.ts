@@ -101,8 +101,20 @@ const colorOptions = [
 
 // Define Wall Color Options (Ensure only White and Finished exist)
 export const wallColorOptions: CustomizationOption[] = [
-  { id: 'wall-white', name: 'White', price: 0, category: 'visual', description: 'Clean white interior walls.' },
-  { id: 'wall-finished', name: 'Finished', price: 150, category: 'visual', description: 'Natural wood finish walls.' },
+  {
+    id: 'wall-white',
+    category: 'wallcolor',
+    name: 'Painted Cedar', 
+    price: 0, 
+    description: 'Clean and bright painted walls.',
+  },
+  {
+    id: 'wall-finished',
+    category: 'wallcolor',
+    name: 'Finished Cedar', 
+    price: 1200,
+    description: 'Natural wood finish for a warm, rustic look.',
+  }
 ];
 
 // Define Cabinet Color Options
@@ -120,11 +132,9 @@ export const counterOptions: CustomizationOption[] = [
 
 // Placeholder Electrical Options
 const electricalOptions: CustomizationOption[] = [
-  { id: 'electrical-basic', category: 'electrical', name: 'Basic Electrical Setup', price: 1500, description: 'Essential wiring and outlets.' },
-  { id: 'electrical-solar-200w', category: 'electrical', name: '200W Solar Package', price: 2800, description: '200W panels with charge controller.' },
-  { id: 'electrical-inverter-1000w', category: 'electrical', name: '1000W Inverter', price: 800, description: 'Powers AC devices.' },
-  { id: 'connectivity-weboost', category: 'electrical', name: 'weBoost Cell Signal Booster', price: 650, description: 'Improves cell signal reception inside the van.' },
-  { id: 'connectivity-starlink', category: 'electrical', name: 'Starlink Satellite Internet', price: 2500, description: 'High-speed internet connectivity via satellite (requires subscription).' },
+  { id: 'electrical-solar-200w', category: 'electrical', name: '200W Solar Package', price: 2800, description: 'Provides off-grid power.' },
+  { id: 'connectivity-weboost', category: 'electrical', name: 'weBoost Cell Signal Booster', price: 650, description: 'Enhances cell signal.' },
+  { id: 'connectivity-starlink', category: 'electrical', name: 'Starlink Satellite Internet', price: 2500, description: 'High-speed internet anywhere.' }
 ];
 
 // Placeholder Exterior Options
@@ -135,7 +145,7 @@ const exteriorOptions: CustomizationOption[] = [
 
 // Placeholder Bathroom Options
 const bathroomOptions: CustomizationOption[] = [
-  { id: 'bathroom-portable-toilet', category: 'bathroom', name: 'Portable Toilet', price: 150, description: 'Simple and removable.' },
+  { id: 'bathroom-portable-toilet', category: 'bathroom', name: 'Compost Toilet', price: 150, description: 'Simple and removable.' },
   { id: 'bathroom-outdoor-shower', category: 'bathroom', name: 'Outdoor Shower Kit', price: 300, description: 'External shower hookup.' },
 ];
 
@@ -166,9 +176,8 @@ const upholsteryOptions: CustomizationOption[] = [
 
 // Placeholder Heating Options
 const heatingOptions: CustomizationOption[] = [
-  { id: 'heating-propane', category: 'heating', name: 'Propane Heater', price: 750, description: 'Portable propane heating unit.' },
-  { id: 'heating-diesel', category: 'heating', name: 'Diesel Air Heater', price: 1800, description: 'Integrated diesel-powered heater.' },
-  { id: 'heating-velit', category: 'heating', name: 'Velit Gas Heater', price: 1200, description: 'Efficient gas heating system.' }
+  { id: 'heating-diesel-velit-gas', category: 'heating', name: 'Diesel/Velit/Gas Heater', price: 1800, description: 'Integrated diesel, Velit, or gas-powered heater.' }, 
+  { id: 'heating-none', category: 'heating', name: 'No Heater', price: 0, description: 'No heating system installed.' } 
 ];
 
 export {

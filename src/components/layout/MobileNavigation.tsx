@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { VanModel } from '../../types';
 
 type CategoryType = 
   | 'chassis' 
@@ -33,6 +34,7 @@ interface MobileNavigationProps {
   onOptionSelect: (optionId: string, categoryType: CategoryType) => void;
   activeCategory: CategoryType | null;
   setActiveCategory: (category: CategoryType | null) => void;
+  selectedModel: VanModel | null;
 }
 
 const MobileNavigation: React.FC<MobileNavigationProps> = ({
@@ -40,7 +42,8 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   selectedOptions,
   onOptionSelect,
   activeCategory,
-  setActiveCategory
+  setActiveCategory,
+  selectedModel
 }) => {
   // Function to determine if an option is selected (utility function)
   const isOptionSelected = (optionId: string): boolean => {
@@ -104,23 +107,29 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             'mobile-config-content',
             activeCategory === category.type && 'open'
           )}>
-            {category.options.map((option) => (
-              <div 
-                key={option.id}
-                className={cn(
-                  'p-3 my-1 rounded-md transition-all shadow-sm cursor-pointer',
-                  isOptionSelected(option.id) 
-                    ? 'bg-[#F8BC40] text-white' 
-                    : 'bg-white hover:bg-gray-50 border border-gray-100'
-                )}
-                onClick={() => onOptionSelect(option.id, category.type)}
-              >
-                <div className="flex justify-between items-center">
-                  <div>{option.name}</div>
-                  <div>{formatPrice(option.price)}</div>
+            {category.options.map((option) => {
+              const isSelected = category.type === 'models' 
+                ? option.id === selectedModel?.id 
+                : isOptionSelected(option.id);
+
+              return (
+                <div 
+                  key={option.id}
+                  className={cn(
+                    'p-3 my-1 rounded-md transition-all shadow-sm cursor-pointer',
+                    isSelected 
+                      ? 'bg-[#F8BC40] text-white' 
+                      : 'bg-white hover:bg-gray-50 border border-gray-100'
+                  )}
+                  onClick={() => onOptionSelect(option.id, category.type)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>{option.name}</div>
+                    <div>{formatPrice(option.price)}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}

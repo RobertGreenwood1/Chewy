@@ -393,7 +393,7 @@ ${comments ? `Additional Notes:\n${comments}` : ''}`
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 8 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
@@ -845,17 +845,9 @@ export const VanBuilder: React.FC = () => {
   
   // Configuration state
   const [selectedChassis, setSelectedChassis] = useState<ChassisOption | null>(null);
-  const [selectedModel, setSelectedModel] = useState<VanModel | null>(vanModels[0] || null); // Default to first model or null
+  const [selectedModel, setSelectedModel] = useState<VanModel | null>(null); // Initialize to null, no default model
   const [selectedWallColor, setSelectedWallColor] = useState<string>('');
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(() => {
-    // Initialize with default chassis and model if they exist
-    const initialOptions: (string | undefined)[] = [
-      chassisOptions[0]?.id,
-      vanModels[0]?.id
-    ];
-    // Filter out any undefined IDs before returning
-    return initialOptions.filter((id): id is string => Boolean(id));
-  });
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [hasVan, setHasVan] = useState(false);
 
   // Selected cabinet color
@@ -1016,58 +1008,123 @@ export const VanBuilder: React.FC = () => {
 
   // Handle chassis selection
   const handleChassisSelect = (chassisId: string) => {
-    const selected = chassisOptions.find(c => c.id === chassisId);
-    setSelectedChassis(selected || null);
-    // setActiveCategory('models'); // Comment out to prevent auto-advancing
+    const newSelectedChassis = chassisOptions.find(c => c.id === chassisId);
+    setSelectedChassis(newSelectedChassis || null);
 
-    // Update selectedOptions: remove other chassis, add this one
-    setSelectedOptions(prev => [
-      // Filter out any other chassis options
-      ...prev.filter(id => !chassisOptions.some(ch => ch.id === id)),
-      // Add the newly selected chassis ID
-      chassisId
-    ]);
+    // Check if the currently selected model is compatible with the new chassis
+    if (selectedModel && newSelectedChassis && !selectedModel.chassisSizes.includes(newSelectedChassis.id)) {
+      // Model is incompatible, reset model and dependent selections
+      setSelectedModel(null);
+      setHasSeats(false); // Reset seats
+      setHasBed(false);   // Reset bed
+      setSelectedWallColor(''); // Reset wall color
+      setSelectedCabinet(null); // Reset cabinet
+      setSelectedCounter(null); // Reset counter
+      // Reset selected options to only include the new chassis
+      setSelectedOptions([chassisId]);
+      // Reset completed categories, keeping only 'chassis'
+      setCompletedCategories(['chassis']);
+      // Set active category to 'models' to prompt user
+      setActiveCategory('models');
+    } else {
+      // Model is compatible OR no model was selected, update options normally
+      setSelectedOptions(prev => [
+        // Filter out any other chassis options
+        ...prev.filter(id => !chassisOptions.some(ch => ch.id === id)),
+        // Keep existing non-chassis options if model is compatible
+        ...(selectedModel && newSelectedChassis && selectedModel.chassisSizes.includes(newSelectedChassis.id)
+           ? prev.filter(id => !chassisOptions.some(ch => ch.id === id))
+           : []),
+        // Add the newly selected chassis ID
+        chassisId
+      ]);
 
-    // Mark chassis as completed
-    if (!completedCategories.includes('chassis')) {
-      setCompletedCategories(prev => Array.from(new Set([...prev, 'chassis'])));
+      // Mark chassis as completed
+      if (!completedCategories.includes('chassis')) {
+        setCompletedCategories(prev => Array.from(new Set([...prev, 'chassis'])));
+      }
+      // If a model was previously selected and is compatible, keep active category null or let user decide
+      // Otherwise (no model selected yet), potentially activate 'models' category (optional, commented out below)
+      // if (!selectedModel) {
+      //   setActiveCategory('models');
+      // }
     }
   };
 
-  // Handle option selection
+  // Handle option selection (generic toggle, except for electrical category which is single-select)
   const handleOptionToggle = (optionId: string) => {
     setSelectedOptions(prev => {
       const isSelected = prev.includes(optionId);
-      
-      if (isSelected) {
-        // Remove the option
-        const newOptions = prev.filter(id => id !== optionId);
-        
-        // Check if this was the last option in the current category
-        const categoryOptions = getCategoryOptions(activeCategory as CategoryType);
-        const hasSelectedOptionsInCategory = categoryOptions.some(opt => 
-          newOptions.includes(opt.id)
-        );
-        
-        // If no more options are selected in this category, remove it from completed
-        if (!hasSelectedOptionsInCategory) {
-          setCompletedCategories(prev => 
-            prev.filter(cat => cat !== activeCategory)
+      // Check if the clicked option belongs to the 'electrical' category using the imported array
+      const isElectricalCategory = electricalOptions.some(opt => opt.id === optionId);
+
+      if (isElectricalCategory) {
+        // --- START: Electrical Category Single-Select Logic ---
+        if (isSelected) {
+          // Deselect the current electrical option
+          const newOptions = prev.filter(id => id !== optionId);
+          // Check completion status for 'electrical' category
+          // Use the imported electricalOptions or getCategoryOptions('electrical')
+          const electricalOptionIds = electricalOptions.map(opt => opt.id);
+          const hasSelectedOptionsInCategory = electricalOptionIds.some(id => 
+            newOptions.includes(id)
           );
+          if (!hasSelectedOptionsInCategory && completedCategories.includes('electrical')) {
+            setCompletedCategories(curr => curr.filter(cat => cat !== 'electrical'));
+          }
+          return newOptions;
+        } else {
+          // Select the new electrical option, removing ALL others in this category first
+          const electricalOptionIds = electricalOptions.map(opt => opt.id);
+          const newOptions = [
+            ...prev.filter(id => !electricalOptionIds.includes(id)), // Remove all electrical ids
+            optionId // Add the newly selected one
+          ];
+          // Ensure 'electrical' category is marked completed
+          if (!completedCategories.includes('electrical')) {
+              setCompletedCategories(curr => Array.from(new Set([...curr, 'electrical'])));
+          }
+          return newOptions;
         }
-        
-        return newOptions;
+        // --- END: Electrical Category Single-Select Logic ---
       } else {
-        // Add the option and mark category as completed
-    if (!completedCategories.includes(activeCategory as CategoryType)) {
-          setCompletedCategories(prev => Array.from(new Set([...prev, activeCategory as CategoryType])));
+        // --- START: Original Toggle Logic for Other Options ---
+        if (isSelected) {
+          // Remove the option
+          const newOptions = prev.filter(id => id !== optionId);
+          
+          // Check if this was the last option in the current ACTIVE category
+          // Ensure activeCategory is valid before using it
+          const currentCategory = activeCategory as CategoryType | null;
+          if (currentCategory) { 
+            const categoryOptions = getCategoryOptions(currentCategory);
+            const hasSelectedOptionsInCategory = categoryOptions.some(opt => 
+              newOptions.includes(opt.id)
+            );
+            
+            // If no more options are selected in this category, remove it from completed
+            if (!hasSelectedOptionsInCategory && completedCategories.includes(currentCategory)) {
+              setCompletedCategories(curr => 
+                curr.filter(cat => cat !== currentCategory)
+              );
+            }
+          }
+          
+          return newOptions;
+        } else {
+          // Add the option and mark category as completed
+          const currentCategory = activeCategory as CategoryType | null;
+          if (currentCategory && !completedCategories.includes(currentCategory)) {
+            setCompletedCategories(curr => Array.from(new Set([...curr, currentCategory])) );
+          }
+          
+          return [...prev, optionId];
         }
-        
-        return [...prev, optionId];
+        // --- END: Original Toggle Logic for Other Options ---
       }
     });
   };
-  
+
   // Helper function to get options for a specific category
 
   // Helper function to get options for a specific category
@@ -1173,23 +1230,6 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
-  const renderHeatingOptions = () => (
-    <div className="space-y-1 px-3">
-      {heatingOptions.map(option => (
-        <OptionItem 
-          key={option.id} 
-          isSelected={selectedOptions.includes(option.id)}
-          name={option.name}
-          price={option.price}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOptionToggle(option.id);
-          }}
-        />
-      ))}
-    </div>
-  );
-
   const renderExteriorOptions = () => (
     <div className="space-y-1 px-3">
       {exteriorOptions.map(option => (
@@ -1211,14 +1251,11 @@ export const VanBuilder: React.FC = () => {
     <div className="space-y-1 px-3">
       {bathroomOptions.map(option => (
         <OptionItem 
-          key={option.id} 
+          key={option.id}
           isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOptionToggle(option.id);
-          }}
+          onClick={() => handleBathroomSelect(option.id)} // Use the new single-select handler
         />
       ))}
     </div>
@@ -1227,31 +1264,57 @@ export const VanBuilder: React.FC = () => {
   // Handle kitchen option selection
   const handleKitchenOptionSelect = (optionId: string) => {
     // Check if this is a countertop option
-    const isCountertop = optionId.includes('kitchen-countertop-');
-    
+    const isCountertop = optionId.startsWith('kitchen-countertop-');
+    // --- START: Added Check for Stove ---
+    const isStove = optionId.startsWith('kitchen-stove-');
+    // --- END: Added Check for Stove ---
+
     if (isCountertop) {
       // If clicking the same countertop that's already selected, remove it
       if (selectedOptions.includes(optionId)) {
-        setSelectedOptions(selectedOptions.filter(opt => opt !== optionId));
-        setSelectedCounter(''); // Clear the counter selection
+        setSelectedOptions(prev => prev.filter(opt => opt !== optionId));
+        setSelectedCounter(null); // Clear the counter selection state
       } else {
         // Remove any existing countertop and add the new one
-        const withoutCountertops = selectedOptions.filter(opt => !opt.includes('kitchen-countertop-'));
-        setSelectedOptions([...withoutCountertops, optionId]);
-        setSelectedCounter(optionId); // Set the new counter selection
+        setSelectedOptions(prev => [
+          ...prev.filter(opt => !opt.startsWith('kitchen-countertop-')),
+          optionId
+        ]);
+        const selectedCounterOption = kitchenOptions.find(opt => opt.id === optionId);
+        setSelectedCounter(selectedCounterOption ? selectedCounterOption.id : null); // Set the new counter selection state using the ID
       }
+    // --- START: Added Stove Logic ---
+    } else if (isStove) {
+      // Handle stove options (single select)
+      // If clicking the same stove, deselect it (optional, keeps radio-button like behavior if removed)
+      // if (selectedOptions.includes(optionId)) {
+      //   setSelectedOptions(prev => prev.filter(opt => opt !== optionId));
+      // } else {
+        // Remove any existing stove and add the new one
+        setSelectedOptions(prev => [
+          ...prev.filter(opt => !opt.startsWith('kitchen-stove-')),
+          optionId
+        ]);
+      // }
+    // --- END: Added Stove Logic ---
     } else {
-      // Handle non-countertop options normally
+      // Handle other non-countertop, non-stove options (like induction - toggle behavior)
       if (selectedOptions.includes(optionId)) {
-        setSelectedOptions(selectedOptions.filter(id => id !== optionId));
+        setSelectedOptions(prev => prev.filter(id => id !== optionId));
       } else {
-        setSelectedOptions([...selectedOptions, optionId]);
+        setSelectedOptions(prev => [...prev, optionId]);
       }
     }
 
     // Mark kitchen category as completed if we have any selections
-    if (!completedCategories.includes('kitchen')) {
-      setCompletedCategories([...completedCategories, 'kitchen']);
+    // Check if *any* kitchen option is selected after the update
+    const hasKitchenSelection = selectedOptions.some(opt => opt.startsWith('kitchen-')); 
+    // Adjusted completion logic might be needed depending on exact requirements
+    if (hasKitchenSelection && !completedCategories.includes('kitchen')) {
+      setCompletedCategories(prev => [...prev, 'kitchen']);
+    } else if (!hasKitchenSelection && completedCategories.includes('kitchen')) {
+      // Optional: Remove completion if all kitchen items are deselected
+      // setCompletedCategories(prev => prev.filter(cat => cat !== 'kitchen'));
     }
   };
 
@@ -1259,7 +1322,7 @@ export const VanBuilder: React.FC = () => {
     <div className="space-y-1 px-3">
       {kitchenOptions.map(option => (
         <OptionItem 
-          key={option.id} 
+          key={option.id}
           isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
@@ -1269,35 +1332,61 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
+  // --- START: New Handler for Lighting ---
+  // Handle Lighting selection (single select)
+  const handleLightingSelect = (optionId: string) => {
+    setSelectedOptions(prev => [
+      // Filter out any other lighting options
+      ...prev.filter(id => !id.startsWith('lighting-')),
+      // Add the newly selected lighting ID
+      optionId
+    ]);
+    // Optionally, mark category as completed if needed
+    // if (!completedCategories.includes('lighting')) {
+    //   setCompletedCategories(prev => Array.from(new Set([...prev, 'lighting'])));
+    // }
+  };
+  // --- END: New Handler for Lighting ---
+
   const renderLightingOptions = () => (
     <div className="space-y-1 px-3">
       {lightingOptions.map(option => (
         <OptionItem 
-          key={option.id} 
+          key={option.id}
           isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOptionToggle(option.id);
-          }}
+          onClick={() => handleLightingSelect(option.id)}
         />
       ))}
     </div>
   );
 
+  // --- START: New Handler for Power ---
+  // Handle Power selection (single select)
+  const handlePowerSelect = (optionId: string) => {
+    setSelectedOptions(prev => [
+      // Filter out any other power options
+      ...prev.filter(id => !id.startsWith('power-')),
+      // Add the newly selected power ID
+      optionId
+    ]);
+    // Optionally, mark category as completed if needed
+    // if (!completedCategories.includes('power')) {
+    //   setCompletedCategories(prev => Array.from(new Set([...prev, 'power'])));
+    // }
+  };
+  // --- END: New Handler for Power ---
+
   const renderPowerOptions = () => (
     <div className="space-y-1 px-3">
       {powerOptions.map(option => (
         <OptionItem 
-          key={option.id} 
+          key={option.id}
           isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOptionToggle(option.id);
-          }}
+          onClick={() => handlePowerSelect(option.id)}
         />
       ))}
     </div>
@@ -1414,6 +1503,11 @@ export const VanBuilder: React.FC = () => {
     }
   };
 
+  // Filter models based on selected chassis *before* creating categoryData
+  const availableModels = vanModels.filter(model => 
+    selectedChassis ? model.chassisSizes.includes(selectedChassis.id) : true
+  );
+
   // Prepare category data for mobile navigation
   const categoryData = CATEGORY_ORDER.map((category) => {
     let options: any[] = [];
@@ -1424,7 +1518,7 @@ export const VanBuilder: React.FC = () => {
         options = chassisOptions.map(c => ({id: c.id, name: c.name, price: c.priceAdjustment}));
         break;
       case 'models':
-        options = vanModels.map(m => ({id: m.id, name: m.name, price: m.basePrice}));
+        options = availableModels.map(m => ({id: m.id, name: m.name, price: m.basePrice}));
         break;
       case 'wallcolor':
         options = wallColorOptions;
@@ -1493,15 +1587,29 @@ export const VanBuilder: React.FC = () => {
           handleModelSelect(selectedModel);
         }
         break;
-      case 'cabinets':  // Assuming cabinets uses the general toggle
-      case 'electrical':
-      case 'heating':
-      case 'exterior':
-      case 'bathroom':
       case 'kitchen':
+        handleKitchenOptionSelect(optionId);
+        break;
+      case 'wallcolor':
+        handleWallColorSelect(optionId);
+        break;
+      case 'cabinets':  
+        handleCabinetSelect(optionId);
+        break;
       case 'lighting':
+        handleLightingSelect(optionId);
+        break;
       case 'power':
-      case 'wallcolor': // Assuming wallcolor uses the general toggle
+        handlePowerSelect(optionId);
+        break;
+      case 'bathroom': // Add specific case for bathroom single-select
+        handleBathroomSelect(optionId);
+        break;
+      case 'heating': // Ensure this case exists and calls the correct handler
+        handleHeatingSelect(optionId);
+        break;
+      case 'electrical':
+      case 'exterior':
       default:
         // Ensure the active category is set correctly before toggling
         // This might be needed if the click doesn't automatically set it
@@ -1515,9 +1623,59 @@ export const VanBuilder: React.FC = () => {
     }
   };
 
+  // --- START: Re-add handleHeatingSelect ---
+  // Single-select handler for heating options
+  const handleHeatingSelect = (optionId: string) => {
+    setSelectedOptions(prev => {
+      // Remove other heating options, then add the selected one
+      const otherOptions = prev.filter(id => !id.startsWith('heating-'));
+      const newSelection = [...otherOptions, optionId];
+
+      // Mark category completed if not already
+      if (!completedCategories.includes('heating')) {
+        setCompletedCategories(curr => Array.from(new Set([...curr, 'heating'])));
+      }
+      return newSelection;
+    });
+  };
+  // --- END: Re-add handleHeatingSelect ---
+
+  // --- START: Add handleBathroomSelect ---
+  // Single-select handler for bathroom options
+  const handleBathroomSelect = (optionId: string) => {
+    setSelectedOptions(prev => {
+      // Remove other bathroom options, then add the selected one
+      const otherOptions = prev.filter(id => !id.startsWith('bathroom-'));
+      const newSelection = [...otherOptions, optionId];
+
+      // Mark category completed if not already
+      if (!completedCategories.includes('bathroom')) {
+        setCompletedCategories(curr => Array.from(new Set([...curr, 'bathroom'])));
+      }
+      return newSelection;
+    });
+  };
+  // --- END: Add handleBathroomSelect ---
+
   const handleHasOwnVanToggle = () => {
     setHasVan(!hasVan);
   };
+
+  // --- START: Re-add renderHeatingOptions ---
+  const renderHeatingOptions = () => (
+    <div className="space-y-1 px-3">
+      {heatingOptions.map(option => (
+        <OptionItem 
+          key={option.id} 
+          isSelected={selectedOptions.includes(option.id)}
+          name={option.name}
+          price={option.price}
+          onClick={() => handleHeatingSelect(option.id)} // Use the single-select handler
+        />
+      ))}
+    </div>
+  );
+  // --- END: Re-add renderHeatingOptions ---
 
   return (
     <div className="flex flex-col min-h-screen h-screen bg-gradient-to-br from-[#FDF8E2] via-white to-[#FCEFCA] text-gray-800 font-['Open_Sans'] fixed inset-0 overflow-hidden">
@@ -1559,6 +1717,7 @@ export const VanBuilder: React.FC = () => {
             onOptionSelect={handleMobileOptionClick} 
             activeCategory={activeCategory} 
             setActiveCategory={setActiveCategory} 
+            selectedModel={selectedModel} // Pass selectedModel as a prop
           />
         </div>
       )}
@@ -1618,7 +1777,7 @@ export const VanBuilder: React.FC = () => {
                         {category === 'wallcolor' && renderWallColorOptions()}
                         {category === 'cabinets' && renderCabinetsOptions()}
                         {category === 'electrical' && renderElectricalOptions()}
-                        {category === 'heating' && renderHeatingOptions()}
+                        {category === 'heating' && renderHeatingOptions()} {/* Call the render function */}
                         {category === 'exterior' && renderExteriorOptions()}
                         {category === 'bathroom' && renderBathroomOptions()}
                         {category === 'kitchen' && renderKitchenOptions()}
