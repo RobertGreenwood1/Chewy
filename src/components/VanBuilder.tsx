@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { chassisOptions, customizationOptions, colorOptions, cabinetOptions } from '../data/vanData';
-import { vanModels } from '../data/vanData'; 
+import { chassisOptions, customizationOptions, colorOptions, vanModels } from '../data/vanData'; 
 import { VanModel } from '../types'; 
 import { cn } from '../lib/utils';
 import { vanLayerImages } from '../data/vanImageData'; // Import structured image data
@@ -668,10 +667,11 @@ interface LayeredImageProps {
   hasSeats: boolean;
   hasBed: boolean;
   layoutModel: string;
+  selectedModel: VanModel | null;
 }
 
 const VanImageVisualization: React.FC<LayeredImageProps> = ({
-  chassisSize, layoutModel, view, selectedWallColor, selectedCabinet, selectedCounter, hasSeats, hasBed,
+  chassisSize, layoutModel, view, selectedWallColor, selectedCabinet, selectedCounter, hasSeats, hasBed, selectedModel,
 }) => {
   // Helper function to safely get image path
   const getImagePath = (layer: string, subLayer?: string, subSubLayer?: string) => {
@@ -708,20 +708,32 @@ const VanImageVisualization: React.FC<LayeredImageProps> = ({
   let counterSrc = '', frontCounterSrc = '', backCounterSrc = '';
   const bedSrc = getImagePath('bed');
   const seatsSrc = getImagePath('seats');
+  const tableSrc = getImagePath('table', 'teak'); // Assume teak for now
+  const benchCushionSrc = getImagePath('benchCushion');
 
+  // --- Cabinet Logic --- 
+  // Rio Grande has front/back cabinets
   if (layoutModel === 'rio-grande') {
     // Extract options (e.g., 'cabinet-white' -> 'white')
     const cabOptionRG = selectedCabinet?.split('-').pop();
-    const countOptionRG = selectedCounter?.split('-').pop();
     frontCabinetSrc = getImagePath('frontCabinet', cabOptionRG);
     backCabinetSrc = getImagePath('backCabinet', cabOptionRG);
+  } else {
+    // Other models use single cabinet image
+    const cabOption = selectedCabinet?.split('-').pop();
+    cabinetSrc = getImagePath('cabinet', cabOption);
+  }
+
+  // --- Counter Logic --- 
+  // Rio Grande and 170 Pedernales have front/back counters
+  if (layoutModel === 'rio-grande' || (chassisSize === 'sprinter170' && layoutModel === 'pedernales')) {
+    // Extract options (e.g., 'cabinet-white' -> 'white')
+    const countOptionRG = selectedCounter?.split('-').pop();
     frontCounterSrc = getImagePath('frontCounter', countOptionRG);
     backCounterSrc = getImagePath('backCounter', countOptionRG);
   } else {
-    // Extract options (e.g., 'cabinet-white' -> 'white')
-    const cabOption = selectedCabinet?.split('-').pop();
+    // Other models (e.g., 144 Pedernales, San Saba) have single cabinet/counter
     const countOption = selectedCounter?.split('-').pop();
-    cabinetSrc = getImagePath('cabinet', cabOption);
     counterSrc = getImagePath('counter', countOption);
   }
 
@@ -778,19 +790,19 @@ const VanImageVisualization: React.FC<LayeredImageProps> = ({
       )}
 
       {/* Counter layer */}
-      {layoutModel === 'rio-grande' ? (
+      {layoutModel === 'rio-grande' || (chassisSize === 'sprinter170' && layoutModel === 'pedernales') ? (
         <>
           <img
             src={frontCounterSrc}
             alt="Front counter"
             className={`absolute max-w-full max-h-full object-contain ${!frontCounterSrc ? 'hidden' : ''}`}
-            style={{ zIndex: 35 }} // Higher z-index
+            style={{ zIndex: 45 }} // Higher z-index
           />
           <img
             src={backCounterSrc}
             alt="Back counter"
             className={`absolute max-w-full max-h-full object-contain ${!backCounterSrc ? 'hidden' : ''}`}
-            style={{ zIndex: 30 }} // Lower z-index
+            style={{ zIndex: 42 }} // Lower z-index
           />
         </>
       ) : (
@@ -798,17 +810,41 @@ const VanImageVisualization: React.FC<LayeredImageProps> = ({
           src={counterSrc}
           alt="Counter"
           className={`absolute max-w-full max-h-full object-contain ${!counterSrc ? 'hidden' : ''}`}
-          style={{ zIndex: 5 }} // Standard counter above bed
+          style={{ zIndex: 41 }} // Standard counter above bed
         />
       )}
 
       {/* Bed layer */}
-      <img
-        src={hasBed && bedSrc ? bedSrc : ''}
-        alt="Bed"
-        className={`absolute max-w-full max-h-full object-contain ${!(hasBed && bedSrc) ? 'hidden' : ''}`}
-        style={{ zIndex: 40 }} // Above cabinets/counters
-      />
+      {hasBed && bedSrc && (
+        <img
+          src={bedSrc}
+          alt="Bed"
+          className="absolute max-w-full max-h-full object-contain"
+          style={{ zIndex: 40 }} // Above cabinets/counters
+        />
+      )}
+
+      {/* Table and Bench Cushion layer (only for Rio Grande when bed is off) */}
+      {!hasBed && selectedModel?.id === 'rio-grande' && (
+        <>
+          {benchCushionSrc && (
+            <img
+              src={benchCushionSrc}
+              alt="Bench Cushion"
+              className="absolute max-w-full max-h-full object-contain"
+              style={{ zIndex: 43 }} // Below table (44), above back counter (42)
+            />
+          )}
+          {tableSrc && (
+            <img
+              src={tableSrc}
+              alt="Table"
+              className="absolute max-w-full max-h-full object-contain"
+              style={{ zIndex: 44 }} // Below front counter (45), above cushion (43)
+            />
+          )}
+        </>
+      )}
 
       {/* Seats layer */}
       <img
@@ -853,7 +889,7 @@ export const VanBuilder: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [handleResize]);
   
-  // Active category state - make it nullable to support closing drawers
+  // Active category state - Allow null for when no category is active
   const [activeCategory, setActiveCategory] = useState<CategoryType | null>('chassis');
   
   // Completed categories
@@ -929,6 +965,11 @@ export const VanBuilder: React.FC = () => {
     { id: 'power-weekender', name: 'Weekender 300Ah', price: 3500 },
     { id: 'power-staycool', name: 'Stay Cool 400Ah', price: 4500 },
     { id: 'power-staycool-extender', name: 'Stay Cool Extender 600Ah', price: 6500 }
+  ];
+
+  const cabinetOptions = [
+    { id: 'cabinet-painted', name: 'Painted (Green)', price: 2200 }, 
+    { id: 'cabinet-white', name: 'White', price: 1800 },             
   ];
 
   // Price calculation functions
@@ -1367,7 +1408,7 @@ export const VanBuilder: React.FC = () => {
   const handleCabinetSelect = (cabinetId: string) => {
     // Remove any previous cabinet selection from options
     const filteredOptions = selectedOptions.filter(
-      opt => !opt.includes('cabinet')
+      opt => !opt.startsWith('cabinet-')
     );
     
     // Add the new cabinet selection
@@ -1416,7 +1457,7 @@ export const VanBuilder: React.FC = () => {
   const handleWallColorSelect = (wallColorId: string) => {
     // Remove any previous wall color selection from options
     const filteredOptions = selectedOptions.filter(
-      opt => !opt.includes('wall-')
+      opt => !opt.startsWith('wall-')
     );
     
     // Add the new wall color selection
@@ -1622,6 +1663,7 @@ export const VanBuilder: React.FC = () => {
               hasSeats={hasSeats}
               hasBed={hasBed}
               layoutModel={selectedModel?.id || 'pedernales'}
+              selectedModel={selectedModel}
             />
           </div>
           
@@ -1645,7 +1687,7 @@ export const VanBuilder: React.FC = () => {
           <div className="py-5 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100">
             <h2 className="text-xl font-bold text-gray-800 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2.5 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Customize Your Van
             </h2>
@@ -1771,6 +1813,7 @@ export const VanBuilder: React.FC = () => {
               hasSeats={hasSeats}
               hasBed={hasBed}
               layoutModel={selectedModel?.id || 'pedernales'}
+              selectedModel={selectedModel}
             />
           </div>
         </div>
