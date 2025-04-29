@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { chassisOptions, customizationOptions, colorOptions, vanModels } from '../data/vanData'; 
-import { VanModel } from '../types'; 
+import { chassisOptions, vanModels, electricalOptions, wallColorOptions, customizationOptions, bathroomOptions, heatingOptions, lightingOptions } from '../data/vanData'; // Import necessary option arrays including customizationOptions, bathroomOptions, heatingOptions, lightingOptions
+import { VanModel, ChassisOption, CategoryType, CATEGORY_ORDER } from '../types'; // Import types and CATEGORY_ORDER from central file
 import { cn } from '../lib/utils';
 import { vanLayerImages } from '../data/vanImageData'; // Import structured image data
 import testImage from '../assets/test.png';
@@ -12,44 +12,12 @@ import MobileNavigation from './layout/MobileNavigation';
 
 // Import ShadCN components
 import { Button } from './ui/button';
-import { Card, CardHeader, CardDescription, CardContent, CardFooter } from './ui/card';
+import { Card, CardHeader, CardContent, CardFooter } from './ui/card';
 import { Switch } from './ui/switch';
 import { Checkbox } from './ui/checkbox';
 
-// Define the category types
-type CategoryType = 
-  | 'chassis' 
-  | 'colors'
-  | 'models'
-  | 'wallcolor'
-  | 'upholstery' 
-  | 'electrical' 
-  | 'heating'
-  | 'exterior' 
-  | 'bathroom' 
-  | 'kitchen' 
-  | 'lighting'
-  | 'power'
-  | 'cabinets';
-
-type ViewType = 'interior' | 'exterior' | 'rear' | 'reartop';
-
-// Define the order of categories
-const CATEGORY_ORDER: CategoryType[] = [
-  'chassis', 'models', 'wallcolor', 'colors', 'cabinets', 'upholstery', 'electrical', 'heating',
-  'exterior', 'bathroom', 'kitchen', 'lighting', 'power'
-];
-
-interface CategoryProps {
-  title: string;
-  isActive: boolean;
-  isCompleted: boolean;
-  onClick: () => void;
-  isLocked: boolean;
-}
-
 // Updated Category component with locked state styling
-const Category: React.FC<CategoryProps> = ({ title, isActive, isCompleted, onClick, isLocked }) => {
+const Category: React.FC<{ title: string; isActive: boolean; isCompleted: boolean; onClick: () => void; isLocked: boolean }> = ({ title, isActive, isCompleted, onClick, isLocked }) => {
   let icon = null;
   
   if (isLocked) {
@@ -103,9 +71,8 @@ const Category: React.FC<CategoryProps> = ({ title, isActive, isCompleted, onCli
 interface EmailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedChassis: any;
+  selectedChassis: ChassisOption | null;
   selectedModel: VanModel | null;
-  selectedColor: string;
   selectedOptions: string[];
   getUpgradesTotal: () => number;
   calculateTotal: () => number;
@@ -116,7 +83,6 @@ const EmailModal: React.FC<EmailModalProps> = ({
   onClose,
   selectedChassis,
   selectedModel,
-  selectedColor,
   selectedOptions,
   getUpgradesTotal,
   calculateTotal
@@ -196,10 +162,7 @@ const EmailModal: React.FC<EmailModalProps> = ({
             price: `$${selectedModel.price.toLocaleString()}`
           } : 'Not Selected',
           
-          exterior_color: selectedColor.replace('silver', 'Silver')
-            .replace('white', 'Arctic White')
-            .replace('black', 'Obsidian Black')
-            .replace('gray', 'Tenorite Gray') || 'Not Selected'
+          exterior_color: 'Not Selected'
         },
 
         // Selected Upgrades
@@ -241,7 +204,6 @@ const EmailModal: React.FC<EmailModalProps> = ({
           // Bathroom Options
           bathroom: selectedOptions.filter(opt => opt.includes('bathroom-')).map(opt =>
             opt.replace('bathroom-toilet', 'Composting Toilet')
-              .replace('bathroom-shower', 'Indoor Shower System')
               .replace('bathroom-outdoorshower', 'Outdoor Shower')
           ),
           
@@ -291,7 +253,6 @@ const EmailModal: React.FC<EmailModalProps> = ({
 ------------------------
 Base Van: ${selectedChassis?.name || 'Not Selected'} - $${selectedChassis?.priceAdjustment.toLocaleString() || 0}
 Package: ${selectedModel?.name || 'Not Selected'} - $${selectedModel?.price.toLocaleString() || 0}
-Color: ${formattedConfig.base_configuration.exterior_color}
 
 Selected Options
 ---------------
@@ -352,12 +313,6 @@ ${comments ? `Additional Notes:\n${comments}` : ''}`
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
       <Card className="z-10 w-full max-w-md bg-white/95 backdrop-blur-sm shadow-2xl border border-gray-100/50 rounded-2xl my-8">
         <CardHeader className="pb-1 relative">
-          <div className="flex flex-col items-center">
-            <img src={testImage} alt="Chewy Logo" className="h-24 w-auto mb-1" />
-          </div>
-          <CardDescription className="text-gray-600 mt-1 text-sm text-center px-4">
-            Enter your information to receive your emailed estimate and more information regarding our process.
-          </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-2.5 py-2">
@@ -391,8 +346,8 @@ ${comments ? `Additional Notes:\n${comments}` : ''}`
               <label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
                   </svg>
                 </div>
                 <input
@@ -659,7 +614,7 @@ const OptionItem = ({
 
 // Update the Van Visualization Component with loading state and effects
 interface LayeredImageProps {
-  view: ViewType;
+  view: 'interior' | 'exterior' | 'rear' | 'reartop';
   chassisSize: string;
   selectedWallColor: string;
   selectedCabinet: string | null;
@@ -708,7 +663,9 @@ const VanImageVisualization: React.FC<LayeredImageProps> = ({
   let counterSrc = '', frontCounterSrc = '', backCounterSrc = '';
   const bedSrc = getImagePath('bed');
   const seatsSrc = getImagePath('seats');
-  const tableSrc = getImagePath('table', 'teak'); // Assume teak for now
+  // Determine table source based on selected counter, defaulting to teak
+  const counterOption = selectedCounter?.split('-').pop() || 'teak'; 
+  const tableSrc = getImagePath('table', counterOption);
   const benchCushionSrc = getImagePath('benchCushion');
 
   // --- Cabinet Logic --- 
@@ -857,17 +814,8 @@ const VanImageVisualization: React.FC<LayeredImageProps> = ({
   );
 };
 
-interface Chassis {
-  id: string;
-  name: string;
-  priceAdjustment: number;
-}
-
 // Add wall color options
-const wallColorOptions = [
-  { id: 'wall-finished', name: 'Finished', price: 2800 },
-  { id: 'wall-white', name: 'White', price: 1500 },
-];
+// Removed local wallColorOptions definition to resolve import conflict
 
 export const VanBuilder: React.FC = () => {
   // Responsive state - detect if we're on mobile
@@ -875,7 +823,7 @@ export const VanBuilder: React.FC = () => {
   
   // Setup responsive detection
   const handleResize = useCallback(() => {
-    setIsMobile(window.innerWidth < 768);
+    setIsMobile(window.innerWidth < 1130);
   }, []);
   
   useEffect(() => {
@@ -896,9 +844,9 @@ export const VanBuilder: React.FC = () => {
   const [completedCategories, setCompletedCategories] = useState<CategoryType[]>([]);
   
   // Configuration state
-  const [selectedChassis, setSelectedChassis] = useState<Chassis | null>(null);
+  const [selectedChassis, setSelectedChassis] = useState<ChassisOption | null>(null);
   const [selectedModel, setSelectedModel] = useState<VanModel | null>(vanModels[0] || null); // Default to first model or null
-  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedWallColor, setSelectedWallColor] = useState<string>('');
   const [selectedOptions, setSelectedOptions] = useState<string[]>(() => {
     // Initialize with default chassis and model if they exist
     const initialOptions: (string | undefined)[] = [
@@ -912,9 +860,6 @@ export const VanBuilder: React.FC = () => {
 
   // Selected cabinet color
   const [selectedCabinet, setSelectedCabinet] = useState<string | null>('');
-
-  // Selected wall color
-  const [selectedWallColor, setSelectedWallColor] = useState<string>(''); // Initialize with empty string
 
   // Selected counter
   const [selectedCounter, setSelectedCounter] = useState<string | null>('');
@@ -941,24 +886,12 @@ export const VanBuilder: React.FC = () => {
     { id: 'exterior-platform', name: 'Sprinter Van Rear Door Platform', price: 895 }
   ];
 
-  const bathroomOptions = [
-    { id: 'bathroom-toilet', name: 'Composting Toilet', price: 1200 },
-    { id: 'bathroom-shower', name: 'Indoor Shower System', price: 3500 },
-    { id: 'bathroom-outdoorshower', name: 'Outdoor Shower', price: 650 }
-  ];
-
   const kitchenOptions = [
     { id: 'kitchen-stove-mounted', name: '2 Burner Stove Mounted', price: 950 },
     { id: 'kitchen-stove-unmounted', name: '2 Burner Stove Unmounted', price: 850 },
     { id: 'kitchen-countertop-teak', name: 'Teak Countertop', price: 1200 },
     { id: 'kitchen-countertop-walnut', name: 'Walnut Countertop', price: 1100 },
     { id: 'kitchen-countertop-maple', name: 'Maple Countertop', price: 900 }
-  ];
-
-  const lightingOptions = [
-    { id: 'lighting-premium', name: 'Premium Lighting', price: 1200 },
-    { id: 'lighting-accent', name: 'Accent Lighting', price: 450 },
-    { id: 'lighting-exterior', name: 'Exterior Lighting', price: 600 }
   ];
 
   const powerOptions = [
@@ -984,7 +917,9 @@ export const VanBuilder: React.FC = () => {
         powerOptions.find(opt => opt.id === optionId) ||
         cabinetOptions.find(opt => opt.id === optionId) ||
         wallColorOptions.find(opt => opt.id === optionId) ||
-        customizationOptions.find(opt => opt.id === optionId);
+        customizationOptions.find(opt => opt.id === optionId) ||
+        electricalOptions.find(opt => opt.id === optionId) ||
+        heatingOptions.find(opt => opt.id === optionId);
 
       return total + (option?.price || 0);
     }, 0);
@@ -1006,7 +941,7 @@ export const VanBuilder: React.FC = () => {
   // Update total price when configuration changes
   useEffect(() => {
     // No-op
-  }, [selectedChassis, selectedModel, selectedColor, selectedOptions]);
+  }, [selectedChassis, selectedModel, selectedOptions]);
 
   // Set initial default selection when component mounts
   useEffect(() => {
@@ -1021,9 +956,6 @@ export const VanBuilder: React.FC = () => {
     }
     return 0;
   };
-
-  // Custom model data that maps to our vanModels
-  // Removed unused modelPackages
 
   // Get base package price (if model selected, otherwise 0)
   const getBasePackagePrice = (): number => {
@@ -1080,9 +1012,6 @@ export const VanBuilder: React.FC = () => {
       // Add other categories if their defaults are set here
       return Array.from(newCompleted); // Convert back to array
     });
-
-    // Optionally, set the active category to null or the next logical step
-    setActiveCategory(null); 
   };
 
   // Handle chassis selection
@@ -1102,24 +1031,6 @@ export const VanBuilder: React.FC = () => {
     // Mark chassis as completed
     if (!completedCategories.includes('chassis')) {
       setCompletedCategories(prev => Array.from(new Set([...prev, 'chassis'])));
-    }
-  };
-
-  // Handle color selection
-  const handleColorSelect = (colorId: string) => {
-    setSelectedColor(colorId);
-    
-    // Update selectedOptions: remove other colors, add this one
-    setSelectedOptions(prev => [
-      // Filter out any other color options
-      ...prev.filter(id => !colorOptions.some(c => c.id === id)),
-      // Add the newly selected color ID
-      colorId
-    ]);
-
-    // Mark colors as completed when selected but don't auto-advance
-    if (!completedCategories.includes('colors')) {
-      setCompletedCategories(prev => Array.from(new Set([...prev, 'colors'])));
     }
   };
 
@@ -1163,11 +1074,9 @@ export const VanBuilder: React.FC = () => {
   const getCategoryOptions = (category: CategoryType) => {
     switch (category) {
       case 'electrical':
-        return customizationOptions.filter(opt => opt.category === 'Electrical');
-      case 'upholstery':
-        return [];
+        return electricalOptions; // Use imported electricalOptions
       case 'heating':
-        return [];
+        return heatingOptions; // Use imported heatingOptions
       case 'exterior':
         return exteriorOptions;
       case 'bathroom':
@@ -1190,7 +1099,7 @@ export const VanBuilder: React.FC = () => {
   // Update total price when configuration changes
   useEffect(() => {
     // No-op
-  }, [selectedChassis, selectedModel, selectedColor, selectedOptions]);
+  }, [selectedChassis, selectedModel, selectedOptions]);
 
   // Email modal state
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -1224,7 +1133,10 @@ export const VanBuilder: React.FC = () => {
         {availableModels.map((model) => (
           <div
             key={model.id}
-            onClick={() => handleModelSelect(model)} // Call handleModelSelect with the full model object
+            onClick={(e) => { 
+              e.stopPropagation(); // Prevent event from bubbling to Accordion.Item
+              handleModelSelect(model); 
+            }}
             className={cn(
               "border rounded-lg p-4 cursor-pointer transition-all duration-200 ease-in-out",
               selectedModel?.id === model.id
@@ -1244,30 +1156,12 @@ export const VanBuilder: React.FC = () => {
     );
   };
 
-  const renderColorOptions = () => (
-    <div className="space-y-1 px-3">
-      {colorOptions.map(color => (
-        <OptionItem 
-          key={color.id} 
-          isSelected={selectedColor === color.id}
-          name={color.name}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleColorSelect(color.id);
-          }}
-        />
-          ))}
-        </div>
-  );
-
   const renderElectricalOptions = () => (
     <div className="space-y-1 px-3">
-      {customizationOptions
-        .filter(opt => opt.category === 'Electrical')
-        .map(option => (
-          <OptionItem 
-            key={option.id} 
-            isSelected={selectedOptions.includes(option.id)}
+      {electricalOptions.map(option => ( // Iterate over imported electricalOptions
+        <OptionItem 
+          key={option.id} 
+          isSelected={selectedOptions.includes(option.id)}
           name={option.name}
           price={option.price}
           onClick={(e) => {
@@ -1279,15 +1173,20 @@ export const VanBuilder: React.FC = () => {
     </div>
   );
 
-  const renderUpholsteryOptions = () => (
-    <div className="space-y-1 px-3">
-      {[]}
-    </div>
-  );
-
   const renderHeatingOptions = () => (
     <div className="space-y-1 px-3">
-      {[]}
+      {heatingOptions.map(option => (
+        <OptionItem 
+          key={option.id} 
+          isSelected={selectedOptions.includes(option.id)}
+          name={option.name}
+          price={option.price}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOptionToggle(option.id);
+          }}
+        />
+      ))}
     </div>
   );
 
@@ -1494,11 +1393,7 @@ export const VanBuilder: React.FC = () => {
         return !selectedChassis; // Locked until chassis is selected
       case 'wallcolor':
         return !selectedModel; // Locked until model is selected
-      case 'colors':
-        return !selectedModel; // Locked until model is selected
       case 'cabinets':
-        return !selectedModel; // Locked until model is selected
-      case 'upholstery':
         return !selectedModel; // Locked until model is selected
       case 'electrical':
         return !selectedModel; // Locked until model is selected
@@ -1534,17 +1429,14 @@ export const VanBuilder: React.FC = () => {
       case 'wallcolor':
         options = wallColorOptions;
         break;
-      case 'colors':
-        options = colorOptions.map(c => ({id: c.id, name: c.name, price: 0}));
-        break;
       case 'cabinets':
         options = cabinetOptions;
         break;
-      case 'upholstery':
-        options = [];
+      case 'electrical':
+        options = electricalOptions; // Use imported electricalOptions
         break;
       case 'heating':
-        options = [];
+        options = heatingOptions; // Use imported heatingOptions
         break;
       case 'exterior':
         options = exteriorOptions;
@@ -1561,9 +1453,6 @@ export const VanBuilder: React.FC = () => {
       case 'power':
         options = powerOptions;
         break;
-      case 'electrical':
-        options = customizationOptions.filter(opt => opt.category === 'Electrical');
-        break;
       default:
         options = [];
     }
@@ -1571,12 +1460,12 @@ export const VanBuilder: React.FC = () => {
     return {
       type: category,
       title: category === 'chassis' ? 'Vehicle Chassis' : 
-             category === 'electrical' ? 'Electrical & Connectivity' :
-             category === 'heating' ? 'Heating & Cooling' :
+             category === 'electrical' ? 'Connectivity' :
+             category === 'heating' ? 'Heating' : // Changed from 'Heating & Cooling'
              category === 'exterior' ? 'Exterior Features' :
              category === 'bathroom' ? 'Bathroom Options' :
              category === 'kitchen' ? 'Kitchen Features' :
-             category === 'lighting' ? 'Lighting Systems' :
+             category === 'lighting' ? 'Lighting Packages' : // Changed from 'Lighting Systems'
              category === 'power' ? 'Power Systems' :
              category === 'cabinets' ? 'Cabinet Options' :
              category === 'wallcolor' ? 'Wall Color' :
@@ -1604,12 +1493,7 @@ export const VanBuilder: React.FC = () => {
           handleModelSelect(selectedModel);
         }
         break;
-      case 'colors':
-        handleColorSelect(optionId);
-        break;
-      case 'wallcolor': // Assuming wallcolor uses the general toggle
       case 'cabinets':  // Assuming cabinets uses the general toggle
-      case 'upholstery':
       case 'electrical':
       case 'heating':
       case 'exterior':
@@ -1617,6 +1501,7 @@ export const VanBuilder: React.FC = () => {
       case 'kitchen':
       case 'lighting':
       case 'power':
+      case 'wallcolor': // Assuming wallcolor uses the general toggle
       default:
         // Ensure the active category is set correctly before toggling
         // This might be needed if the click doesn't automatically set it
@@ -1687,7 +1572,7 @@ export const VanBuilder: React.FC = () => {
           <div className="py-5 px-6 sticky top-0 z-10 bg-gradient-to-r from-white to-[#FDF8E2] border-b border-gray-100">
             <h2 className="text-xl font-bold text-gray-800 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2.5 text-[#F8BC40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               Customize Your Van
             </h2>
@@ -1701,12 +1586,12 @@ export const VanBuilder: React.FC = () => {
                 <div key={category}>
                   <Category 
                     title={category === 'chassis' ? 'Vehicle Chassis' : 
-                           category === 'electrical' ? 'Electrical & Connectivity' :
-                           category === 'heating' ? 'Heating & Cooling' :
+                           category === 'electrical' ? 'Connectivity' :
+                           category === 'heating' ? 'Heating' : // Changed from 'Heating & Cooling'
                            category === 'exterior' ? 'Exterior Features' :
                            category === 'bathroom' ? 'Bathroom Options' :
                            category === 'kitchen' ? 'Kitchen Features' :
-                           category === 'lighting' ? 'Lighting Systems' :
+                           category === 'lighting' ? 'Lighting Packages' : // Changed from 'Lighting Systems'
                            category === 'power' ? 'Power Systems' :
                            category === 'cabinets' ? 'Cabinet Options' :
                            category === 'wallcolor' ? 'Wall Color' :
@@ -1731,9 +1616,7 @@ export const VanBuilder: React.FC = () => {
                         {category === 'chassis' && renderChassisOptions()}
                         {category === 'models' && renderModelOptions()}
                         {category === 'wallcolor' && renderWallColorOptions()}
-                        {category === 'colors' && renderColorOptions()}
                         {category === 'cabinets' && renderCabinetsOptions()}
-                        {category === 'upholstery' && renderUpholsteryOptions()}
                         {category === 'electrical' && renderElectricalOptions()}
                         {category === 'heating' && renderHeatingOptions()}
                         {category === 'exterior' && renderExteriorOptions()}
@@ -1929,7 +1812,6 @@ export const VanBuilder: React.FC = () => {
         onClose={() => setIsEmailModalOpen(false)}
         selectedChassis={selectedChassis}
         selectedModel={selectedModel}
-        selectedColor={selectedColor}
         selectedOptions={selectedOptions}
         getUpgradesTotal={getUpgradesTotal}
         calculateTotal={calculateTotal}

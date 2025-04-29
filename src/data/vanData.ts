@@ -123,6 +123,8 @@ const electricalOptions: CustomizationOption[] = [
   { id: 'electrical-basic', category: 'electrical', name: 'Basic Electrical Setup', price: 1500, description: 'Essential wiring and outlets.' },
   { id: 'electrical-solar-200w', category: 'electrical', name: '200W Solar Package', price: 2800, description: '200W panels with charge controller.' },
   { id: 'electrical-inverter-1000w', category: 'electrical', name: '1000W Inverter', price: 800, description: 'Powers AC devices.' },
+  { id: 'connectivity-weboost', category: 'electrical', name: 'weBoost Cell Signal Booster', price: 650, description: 'Improves cell signal reception inside the van.' },
+  { id: 'connectivity-starlink', category: 'electrical', name: 'Starlink Satellite Internet', price: 2500, description: 'High-speed internet connectivity via satellite (requires subscription).' },
 ];
 
 // Placeholder Exterior Options
@@ -145,7 +147,9 @@ const kitchenOptions: CustomizationOption[] = [
 
 // Placeholder Lighting Options
 const lightingOptions: CustomizationOption[] = [
-  { id: 'lighting-led-strips', category: 'lighting', name: 'LED Interior Strips', price: 250, description: 'Basic interior lighting.' },
+  { id: 'lighting-standard', category: 'lighting', name: 'Standard Lighting Package', price: 500, description: 'Standard overhead LED lighting.' },
+  { id: 'lighting-premium', category: 'lighting', name: 'Premium Lighting Package', price: 950, description: 'Dimmable, multi-zone lighting.' },
+  { id: 'lighting-exterior', category: 'lighting', name: 'Exterior Lighting Kit', price: 400, description: 'Awning and underbody lights.' },
 ];
 
 // Placeholder Power Options (distinct from electrical components)
@@ -164,6 +168,7 @@ const upholsteryOptions: CustomizationOption[] = [
 const heatingOptions: CustomizationOption[] = [
   { id: 'heating-propane', category: 'heating', name: 'Propane Heater', price: 750, description: 'Portable propane heating unit.' },
   { id: 'heating-diesel', category: 'heating', name: 'Diesel Air Heater', price: 1800, description: 'Integrated diesel-powered heater.' },
+  { id: 'heating-velit', category: 'heating', name: 'Velit Gas Heater', price: 1200, description: 'Efficient gas heating system.' }
 ];
 
 export {
