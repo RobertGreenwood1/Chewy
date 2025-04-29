@@ -246,7 +246,7 @@ const EmailModal: React.FC<EmailModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          access_key: '245e3966-536c-4be0-a992-fbcf0467bb7d',
+          access_key: 'fa669141-80cf-44f1-933a-9b70b205daa0',
           from_name: name,
           subject: `Van Configuration Request - ${name} - ${selectedModel?.name || 'Package Not Selected'}`,
           message: `Van Configuration Summary
@@ -1341,10 +1341,10 @@ export const VanBuilder: React.FC = () => {
       // Add the newly selected lighting ID
       optionId
     ]);
-    // Optionally, mark category as completed if needed
-    // if (!completedCategories.includes('lighting')) {
-    //   setCompletedCategories(prev => Array.from(new Set([...prev, 'lighting'])));
-    // }
+    // Mark category as completed
+    if (!completedCategories.includes('lighting')) {
+      setCompletedCategories(prev => Array.from(new Set([...prev, 'lighting'])));
+    }
   };
   // --- END: New Handler for Lighting ---
 
@@ -1371,10 +1371,10 @@ export const VanBuilder: React.FC = () => {
       // Add the newly selected power ID
       optionId
     ]);
-    // Optionally, mark category as completed if needed
-    // if (!completedCategories.includes('power')) {
-    //   setCompletedCategories(prev => Array.from(new Set([...prev, 'power'])));
-    // }
+    // Mark category as completed
+    if (!completedCategories.includes('power')) {
+      setCompletedCategories(prev => Array.from(new Set([...prev, 'power'])));
+    }
   };
   // --- END: New Handler for Power ---
 
